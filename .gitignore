@@ -1,0 +1,6 @@
+*.log
+*.so
+*.mod
+*.o
+src/f2py_scratch
+libs
