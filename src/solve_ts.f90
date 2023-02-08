@@ -1,4 +1,7 @@
-SUBROUTINE solve_dt()
+SUBROUTINE solve_ts()
+! $OMP PARALLEL DO PRIVATE(e,t)
+    ! SCHEDULE(DYNAMIC) OR SCHEDULE(GUIDED) OR SCHEDULE(DYNAMIC)
+    ! http://www.inf.ufsc.br/~bosco.sobral/ensino/ine5645/OpenMP_Dynamic_Scheduling.pdf || https://610yilingliu.github.io/2020/07/15/ScheduleinOpenMP/
 DO e = 1, nelements
     DO t = 2, time% Lnts
         IF (.NOT. EXTF% chd(e)) THEN
@@ -10,4 +13,5 @@ DO e = 1, nelements
         END IF
     END DO
 END DO
+! $OMP END PARALLEL DO
 END SUBROUTINE solve_dt

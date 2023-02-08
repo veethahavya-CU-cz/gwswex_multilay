@@ -68,7 +68,7 @@ MODULE Mtiming
 
 	TYPE Ctime
 	! to store and access temporal information of the model
-		TYPE(datetime) :: Gstart, Gend, Lstart, Lend, scratch_dt
+		TYPE(datetime) :: Gstart, Gstop, Lstart, Lstop, scratch_dt
 		TYPE(timedelta) :: Gdt, Ldt, scratch_td
 		INTEGER(INT32) :: Gnts, Lnts, Gts, Lts
 	END TYPE Ctime
@@ -162,7 +162,7 @@ MODULE Muz
 	! to store, access, and manipulate UZ layer properties
 		CHARACTER(LEN=64) :: name
 		LOGICAL, DIMENSION(:), ALLOCATABLE :: isactive
-		REAL(REAL64), DIMENSION(:), POINTER :: Aubound, Albound
+		REAL(REAL32), DIMENSION(:), POINTER :: Aubound, Albound
 		TYPE(CvanG), POINTER :: vanG
 		REAL(REAL32), DIMENSION(:), POINTER :: ks, porosity
 	END TYPE Clayer
@@ -200,8 +200,8 @@ MODULE Mstorages
 		! nlay (number of real vertical layers): 			[-]		[-] 								{1 - 128}
 		INTEGER(INT8), POINTER :: nlay
 		TYPE(Clayer), DIMENSION(:), ALLOCATABLE :: layer
-		REAL(REAL64), DIMENSION(:), POINTER :: top
-		REAL(REAL64), DIMENSION(:,:), POINTER :: bot
+		REAL(REAL32), DIMENSION(:), POINTER :: top
+		REAL(REAL32), DIMENSION(:,:), POINTER :: bot
 		REAL(REAL128), DIMENSION(:,:), ALLOCATABLE :: Gepv, Lepv
 	END TYPE Cuz
 
@@ -209,6 +209,7 @@ MODULE Mstorages
 	! to store, access, and manipulate surface-water storage and parameters
 		! storages:											[m] 										{aquifer bottom elevation - ground surface elevation; relative to defined datum, e.g.: masl}
 		! chd (constant head boundary): 					[-] 	[e]									{T/F}
+		LOGICAL, DIMENSION(:), ALLOCATABLE :: chd
 	END TYPE Cgw
 
 	TYPE, EXTENDS(Cstorage) :: Csw
@@ -217,7 +218,7 @@ MODULE Mstorages
 	END TYPE Csw
 
 
-	TYPE, EXTENDS(Cstorage) :: Csm_
+	TYPE :: Csm_
 	! to store, access, and manipulate soil moisture parameters of discrete model layers and elements
 		! eq (sm at equilibrium):							[m] 	[-]									{0 - epv}
 		! epv (effective pore volume): 						[m] 	[t]									{(Rubound-Rlbound)*porosity}
@@ -232,8 +233,9 @@ MODULE Mstorages
 		INTEGER(INT8) :: lid
 		TYPE(CvanG), POINTER :: vanG
 		LOGICAL :: isactive, gw_bound
-		REAL(REAL128) :: Rubound, Rlbound
-		REAL(REAL128) :: eq, ini
+		REAL(REAL128), DIMENSION(:), ALLOCATABLE :: Lstorage, Gstorage !, discharge
+		REAL(REAL64) :: Rubound, Rlbound
+		! REAL(REAL128) :: eq, ini
 		REAL(REAL128) :: saturation, saturation_ratio
 		REAL(REAL128) :: IC, ICrat
 		REAL(REAL32), POINTER :: ks, porosity
@@ -244,15 +246,17 @@ MODULE Mstorages
 	! to store, access, and manipulate lumped unsaturated zone parameters
 		! nlay (number of real vertical layers): 			[-] 	[-]									{1 - 128}
 		! Aubound, Albound (abs. upper and lower bounds): 	[m]		[nlay]								{relative to the defined datum}
-		! TODO: vnaly (number of virtual vertical layers): 	[-] 	[-]									{1 - 128; nlay*_int_}
-		! TODO: dz_weights (vlayer thickness weights): 		[-] 	[nlay]								{0 - 1; sum = 1}
+		!? TODO: vnaly (number of virtual vertical layers): [-] 	[-]									{1 - 128; nlay*_int_}
+		!? TODO: dz_weights (vlayer thickness weights): 	[-] 	[nlay]								{0 - 1; sum = 1}
 		TYPE(Csm_), DIMENSION(:), ALLOCATABLE :: SM ! 				[nlay]
 		INTEGER(INT8) :: nlay, gws_bnd_lid, gws_bnd_smid
-		REAL(REAL128) :: thickness, Aubound, Albound
+		REAL(REAL32), POINTER :: Aubound, Albound
+		REAL(REAL128) :: thickness
 		LOGICAL :: isactive
 		CONTAINS
 			PROCEDURE, PASS :: init
-			PROCEDURE, PASS :: setup
+			PROCEDURE, PASS :: resolve
+			! PROCEDURE, PASS :: solve_dt
 	END TYPE Cuz_
 
 	TYPE Cext_forcings
@@ -260,7 +264,6 @@ MODULE Mstorages
 		! p (precipitation): 								[m/s]										{ - }
 		! et (evapotranspiration): 							[m/s]										{ - }
 		REAL(REAL64), DIMENSION(:,:), ALLOCATABLE :: p, et
-		LOGICAL, DIMENSION(:), ALLOCATABLE :: chd
 	END TYPE Cext_forcings
 
 	CONTAINS
@@ -272,7 +275,7 @@ END MODULE Mstorages
 
 
 
-MODULE GWSWEX
+MODULE GWSWEX_model
 	USE iso_fortran_env, ONLY: REAL32, REAL64, REAL128, INT8, INT16, INT32, INT64
 	USE Mpaths, ONLY: Cpaths
 	USE Mlogger, ONLY: Clogger
@@ -300,7 +303,7 @@ MODULE GWSWEX
 
 	CONTAINS
 		INCLUDE 'build.f90'
-		INCLUDE 'init_dt.f90'
-		!INCLUDE 'run.f90'
+		INCLUDE 'init_ts.f90'
+		! !INCLUDE 'solve_ts.f90'
 
-END MODULE GWSWEX
+END MODULE GWSWEX_model

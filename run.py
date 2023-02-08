@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import yaml #PyYAML
 from datetime import datetime, timedelta
 
-os.environ['OMP_NUM_THREADS'] = str(psutil.cpu_count(logical = False))
+os.environ['OMP_NUM_THREADS'] = str(psutil.cpu_count(logical=False))
 
 cdll.LoadLibrary('/usr/local/lib/libyaml-wrapper.so')
 sys.path.append(os.path.abspath('libs/'))
@@ -16,10 +16,10 @@ from gwswex_wrapper import gwswex as GWSWEX
 
 def vanGI(d):
 	def theta(h_c):
-		theta_r = vanG_pars[0]
-		theta_s = vanG_pars[1]
-		alpha = vanG_pars[2]
-		n = vanG_pars[3]
+		theta_r = pvanGI.theta_r
+		theta_s = pvanGI.theta_s
+		alpha = pvanGI.alpha
+		n = pvanGI.n
 		m = (1-(1/n))
 		return theta_r + ((theta_s - theta_r)/((1+(alpha*(abs(h_c)))**n))**m)
 	return np.float64(quad(theta,-d,0)[0])
@@ -109,10 +109,9 @@ class pvanGI:
 	alpha: float = 0.35
 	n: float = 1.25
 
-vanG_pars = np.array([0.02, 0.42, 0.35, 1.25], dtype=np.float64, order='F')
 gok = np.random.default_rng().uniform(-3, 3, elems)+150
 bot = gok - 30
-n = np.full(elems, vanG_pars[1])
+n = np.full(elems, pvanGI.theta_s)
 k = np.full(elems, 50e-5)
 macropore_inf_degree = np.full(elems, 0, dtype=np.float64)
 chd = np.full(elems, False, dtype=bool)
@@ -134,25 +133,52 @@ epv = np.zeros((elems,nts+1), dtype=np.float64, order='F')
 epv[:,0] = (gok-gws[:,0])*n
 for x in range(elems):
 	sm[x,0] = (vanGI(gok[x]-gws[x,0]))
-gw_sm_interconnectivity = np.full(elems, vanG_pars[0], dtype=np.float64, order='F') #incorrect - you are mistaking gw_sm_IC with IC ratio! this is abs value
+gw_sm_interconnectivity = np.full(elems, pvanGI.theta_r, dtype=np.float64, order='F') #incorrect - you are mistaking gw_sm_IC with IC ratio! this is abs value
 
-fyaml_path = '/home/gwswex_dev/GWSWEX/gwswex.yml'
+fyaml_path = '/home/gwswex_dev/gwswex_multilay/gwswex.yml'
 gwsewex_config = {}
 
 gwsewex_config['model'] = {}
-gwsewex_config['model']['domain'] = {'nelements': elems, 'dt': dt, 'tstart': tstart.strftime('%Y%m%d %H%M%S'), 'tend': tstop.strftime('%Y%m%d %H%M%S'), 'nlay': 1}
-gwsewex_config['model']['vanG'] = {'alpha': pvanGI.alpha, 'n': pvanGI.n, 'theta_r': pvanGI.theta_r, 'theta_s': pvanGI.theta_s}
+gwsewex_config['model']['domain'] = {}
+gwsewex_config['model']['domain']['nelements'] = elems
+gwsewex_config['model']['domain']['dt'] = dt
+gwsewex_config['model']['domain']['tstart'] = tstart.strftime('%Y%m%d %H%M%S')
+gwsewex_config['model']['domain']['tend'] = tstop.strftime('%Y%m%d %H%M%S')
+gwsewex_config['model']['domain']['nlay'] = 1
+gwsewex_config['model']['domain']['top'] = 'top.ip'
+gwsewex_config['model']['domain']['bot'] = 'bot.ip'
+gwsewex_config['model']['domain']['layer1'] = {}
+gwsewex_config['model']['domain']['layer1']['name'] = 'l1'
+gwsewex_config['model']['domain']['layer1']['isactive'] = 'l1_active.ip'
+gwsewex_config['model']['domain']['layer1']['vanG'] = {}
+gwsewex_config['model']['domain']['layer1']['vanG']['alpha'] = pvanGI.alpha
+gwsewex_config['model']['domain']['layer1']['vanG']['n'] = pvanGI.n
+gwsewex_config['model']['domain']['layer1']['vanG']['theta_r'] = pvanGI.theta_r
+gwsewex_config['model']['domain']['layer1']['vanG']['theta_s'] = pvanGI.theta_s
+gwsewex_config['model']['domain']['layer1']['ks'] = 'l1_ks.ip'
+gwsewex_config['model']['domain']['layer1']['porosity'] = 'l1_porosity.ip'
+# gwsewex_config['model']['domain']['layer1']['macropore_inf_degree'] = 'l1_macropore_inf_degree.ip'
+
+gwsewex_config['model']['boundary'] = {}
+gwsewex_config['model']['boundary']['GW_chd'] = 'GW_chd.ip'
+
+gwsewex_config['model']['initial conditions'] = {}
+gwsewex_config['model']['initial conditions']['GW'] = 'GW.ip'
+gwsewex_config['model']['initial conditions']['SW'] = 'SW.ip'
+
+
 
 gwsewex_config['paths'] = {}
-gwsewex_config['paths']['dirs'] = {'root': str(os.getcwd), 'input': 'na', 'output': 'na'}
-gwsewex_config['paths']['files'] = {'test': 'na.na'}
+gwsewex_config['paths']['dirs'] = {'root': str(os.getcwd()), 'input': str(os.getcwd()), 'output': str(os.getcwd())}
+gwsewex_config['paths']['files'] = {'log': 'GWSWEX_.log'}
 
 gwsewex_config['utils'] = {}
 gwsewex_config['utils']['logger'] = {'level': 1}
 
-yaml.dump(gwsewex_config, fyaml_path)
+with open(fyaml_path, 'w') as fyaml_path:
+	yaml.dump(gwsewex_config, fyaml_path, default_flow_style=False, allow_unicode=True, sort_keys=False)
 
-GWSWEX.initialize(fyaml_path, gok, bot, n, k, macropore_inf_degree, vanG_pars, chd, p, et)
+# GWSWEX.initialize(fyaml_path, gok, bot, n, k, macropore_inf_degree, vanG_pars, chd, p, et)
 
 #%%
 GWSWEX.finalize(gws, sws, sm, epv, gw_sm_interconnectivity)
@@ -171,7 +197,7 @@ Qdiff = np.zeros((elems,nts), dtype=np.float64, order='F')
 GWSWEX.fetch_2d('Qdiff', Qdiff)
 
 influx = (p[0].sum()-p[0,0])*dt - (et[0].sum()-et[0,0])*dt
-delta_storages = sm[0,-1]-sm[0,0] + (gws[0,-1]-gws[0,0])*vanG_pars[1] + sws[0,-1]-sws[0,0]
+delta_storages = sm[0,-1]-sm[0,0] + (gws[0,-1]-gws[0,0])*pvanGI.theta_s + sws[0,-1]-sws[0,0]
 print("mbal err: {:.2e}".format(influx-delta_storages))
 
 op_path = 'output/'

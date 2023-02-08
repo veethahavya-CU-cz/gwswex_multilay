@@ -1,5 +1,5 @@
 MODULE GWSWEX
-	USE core, only: build, init, run
+	USE GWSWEX_model, only: build, init_ts, solve_ts
 
 	IMPLICIT NONE
 
@@ -28,7 +28,7 @@ MODULE GWSWEX
         END SUBROUTINE finalize
 
         SUBROUTINE fetch_1d(attr, res)
-            USE core, only: gw_sm_interconnectivity
+            USE GWSWEX_model, only: gw_sm_interconnectivity
 
             IMPLICIT NONE
             CHARACTER(*), INTENT(IN) :: attr
@@ -43,7 +43,7 @@ MODULE GWSWEX
         END SUBROUTINE fetch_1d
 
         SUBROUTINE fetch_2d(attr, res)
-            USE core, only: gw_dis, sw_dis, sm_dis, Qin, Qout, Qdiff
+            USE GWSWEX_model, only: gw_dis, sw_dis, sm_dis, Qin, Qout, Qdiff
             IMPLICIT NONE
             CHARACTER(*), INTENT(IN) :: attr
             REAL(8), INTENT(INOUT) :: res(:,:)

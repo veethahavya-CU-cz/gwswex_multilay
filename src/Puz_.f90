@@ -1,70 +1,85 @@
-SUBROUTINE init(self, UZ, e)
-    !USE Mstorages, ONLY: Cuz, Cuz_
-
-    CLASS(Cuz_), INTENT(INOUT) :: self
-    TYPE(Cuz), INTENT(IN) :: UZ
-    INTEGER(INT8) :: l, tmpcnt
-    INTEGER(INT32), INTENT(IN) :: e
-
-    ! allocate and initialize UZ layer counter for each element
-    self% nlay = 0
-    DO l = 1, UZ% nlay
-        IF (UZ% layer(l)% isactive(e)) THEN
-            self% nlay = self% nlay + 1
-        END IF
-    END DO
-    ! allocate the SM layers for each element
-    ALLOCATE(self% SM(self% nlay))
-    tmpcnt = 1
-    DO l = 1, UZ% nlay
-        IF (UZ% layer(l)% isactive(e)) THEN
-            self% SM(tmpcnt)% lid = l
-            tmpcnt = tmpcnt + 1
-        END IF
-    END DO
-END SUBROUTINE init
-
-
-SUBROUTINE setup(self, UZ, GW, e)
-    !USE Mstorages, ONLY: Cuz, Cuz_
+SUBROUTINE init(self, UZ, GW, time, e)
+    ! USE Mstorages, ONLY: Cuz, Cuz_
     USE Mtiming, ONLY : Ctime
 
     CLASS(Cuz_), INTENT(INOUT) :: self
-    TYPE(Cuz), INTENT(IN) :: UZ
+    TYPE(Cuz), INTENT(INOUT) :: UZ
     TYPE(Cgw), INTENT(IN) :: GW
-    INTEGER(INT8) :: smn
+    TYPE(Ctime), INTENT(IN) :: time
     INTEGER(INT32), INTENT(IN) :: e
+    INTEGER(INT8) :: ln, smn, tmpcnt
+    REAL(REAL128) :: UZ_storage_sum
 
-    ! set the boundary conditions for each SM layer at build time
+    UZ_storage_sum = 0.0
+
+    ! calculate and allocate the number oƒ active SM layers for element e
+    self% nlay = 0
+    DO ln = 1, UZ% nlay
+        IF (UZ% layer(ln)% isactive(e)) THEN
+            self% nlay = self% nlay + 1
+        END IF
+    END DO
+    ALLOCATE(self% SM(self% nlay))
+
+    ! associte the SM layers with the respective UZ layers and allocate the SM storages for all active layers for element e
+    tmpcnt = 1
+    DO ln = 1, UZ% nlay
+        IF (UZ% layer(ln)% isactive(e)) THEN
+            self% SM(tmpcnt)% lid = ln
+            ALLOCATE(self% SM(tmpcnt)% Gstorage(time% Gnts))
+            ! deactivate the SM layer and set the GW bound flag to false by default
+            self% SM(tmpcnt)% isactive = .FALSE.
+            self% SM(tmpcnt)% gw_bound = .FALSE.
+            tmpcnt = tmpcnt + 1
+        END IF
+    END DO
+
+    ! initialize active SM layer bounds, set initial storages (SMeq), and flag GW bound SM layer for element e
     DO smn = 1, self% nlay
-        ! default - inactive
-        self% SM(smn)% isactive = .FALSE.
-        self% SM(smn)% gw_bound = .FALSE.
+        ! set the UZ properties for each SM layer
+        self% SM(smn)% vanG => UZ% layer(self% SM(smn)% lid)% vanG
+        self% SM(smn)% ks => UZ% layer(self% SM(smn)% lid)% ks(e)
+        self% SM(smn)% porosity => UZ% layer(self% SM(smn)% lid)% porosity(e)
+
         IF (GW% Gstorage(e,1) < UZ% layer(self% SM(smn)% lid)% Aubound(e)) THEN
-        !activate the layer if the GW storage is less than the Aubound of the layer i.e. GWS lies in or under the layer
+        ! activate the layer if the GW storage is less than the Aubound of the layer i.e. GWS lies in or under the layer
             self% SM(smn)% isactive = .TRUE.
+            ! calculate the relative bounds for SMeq calculation
             self% SM(smn)% Rubound = GW% Gstorage(e,1) - UZ% layer(self% SM(smn)% lid)% Aubound(e) ! ub = GWS - L_Aub
             self% SM(smn)% Rlbound = GW% Gstorage(e,1) - max(GW% Gstorage(e,1), UZ% layer(self% SM(smn)% lid)% Albound(e)) ! ub = GWS - max(GWS, L_Alb)
-            IF (GW% Gstorage(e,1) > UZ% layer(self% SM(smn)% lid)% Albound(e)) THEN
+
+            ! set the initial condition for each SM layer to SMeq
+            ! TODO: check how the bounds work with vanGI calc on a seperate py script
+            self% SM(smn)% Gstorage(1) = self% SM(smn)% vanG% integrate(self% SM(smn)% Rubound, self% SM(smn)% Rlbound)
+            UZ_storage_sum = UZ_storage_sum + self% SM(smn)% Gstorage(1)
+
+            IF (GW% Gstorage(e,1) > UZ% layer(self% SM(smn)% lid)% Albound(e) .OR. GW% Gstorage(e,1) == UZ% layer(self% SM(smn)% lid)% Albound(e)) THEN
+            ! set the GW bound flag if the GWS lies above the Albound of the layer i.e. GWS lies within the layer and skip checking the underlying SM layers
                 self% Albound = GW% Gstorage(e,1)
                 self% SM(smn)% gw_bound = .TRUE.
                 self% gws_bnd_lid = self% SM(smn)% lid
                 self% gws_bnd_smid = smn
                 CONTINUE
             END IF
+        ELSE
+            self% SM(smn)% Gstorage(1) = 0.0
         END IF
-        ! set the UZ properties for each SM layer
-        self% SM(smn)% vanG => UZ% layer(self% SM(smn)% lid)% vanG
-        self% SM(smn)% ks = UZ% layer(self% SM(smn)% lid)% ks(e)
-        self% SM(smn)% porosity = UZ% layer(self% SM(smn)% lid)% porosity(e)
     END DO
 
-    self% thickness = self% Aubound - GW% Gstorage(e,1)
+    ! calculate the UZ storage for this element by summing all active SM storages
+    UZ% Gstorage(e,1) = UZ_storage_sum
+
+    ! set the bounds of UZ and calculate its thickness if UZ is active for element e
     IF (.NOT. self% SM(1)% isactive) THEN
         self% isactive = .FALSE.
+    ELSE
+        self% Aubound => UZ% layer(self% SM(1)% lid)% Aubound(e)
+    self% Albound = GW% Gstorage(e,1)
+    self% thickness = self% Aubound - GW% Gstorage(e,1)
     END IF
-!TODO: init SM storages and set ICs
-END SUBROUTINE setup
+
+
+END SUBROUTINE init
 
 
 
@@ -111,7 +126,7 @@ SUBROUTINE resolve(self, UZ, GW, time, e)
             END DO
         END IF
     ELSE
-        ! case when GW has increased from last dt
+    ! case when GW has increased from last dt
 		! TODO: resolve the storages of this layer
 		self% SM((self% gws_bnd_smid))% isactive = .FALSE.
 		self% SM((self% gws_bnd_smid))% Rubound = 0.0
@@ -140,6 +155,6 @@ SUBROUTINE resolve(self, UZ, GW, time, e)
 END SUBROUTINE resolve
 
 
-SUBROUTINE solve_dt_uz()
+! SUBROUTINE solve_dt()
 
-END SUBROUTINE solve_dt_uz
+! END SUBROUTINE solve_dt

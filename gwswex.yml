@@ -1,0 +1,34 @@
+model:
+  domain:
+    nelements: 1
+    dt: 3600
+    tstart: 20200101 000000
+    tend: 20200629 000000
+    nlay: 1
+    top: top.ip
+    bot: bot.ip
+    layer1:
+      name: l1
+      isactive: l1_active.ip
+      vanG:
+        alpha: 0.35
+        n: 1.25
+        theta_r: 0.02
+        theta_s: 0.42
+      ks: l1_ks.ip
+      porosity: l1_porosity.ip
+  boundary:
+    GW_CHD: GW_chd.ip
+  initial conditions:
+    GW: GW.ip
+    SW: SW.ip
+paths:
+  dirs:
+    root: /home/gwswex_dev/gwswex_multilay
+    input: /home/gwswex_dev/gwswex_multilay
+    output: /home/gwswex_dev/gwswex_multilay
+  files:
+    log: GWSWEX_.log
+utils:
+  logger:
+    level: 1

@@ -99,13 +99,13 @@ FUNCTION theta_c(h_c, ptr_c) BIND(C)
 END FUNCTION theta_c
 
 
-FUNCTION integrate(d, u)
+FUNCTION integrate(ub, lb)
 ! integrates the van Genuchten model to calculate total depth-averaged soil moisture content for a given depth below the ground surface using the Fortran-GSL library [https://github.com/reinh-bader/fgsl]
 	USE fgsl
 	USE, INTRINSIC :: iso_c_binding
 
 	REAL(REAL64) :: integrate
-	REAL(REAL64), INTENT(IN) :: d, u
+	REAL(REAL64), INTENT(IN) :: ub, lb
 	INTEGER(fgsl_size_t), PARAMETER :: nmax=1000
 	REAL(fgsl_double), TARGET :: ptr
 	REAL(fgsl_double) :: result, error
@@ -119,7 +119,7 @@ FUNCTION integrate(d, u)
 	f_obj = fgsl_function_init(theta_c, cptr)
 	wk = fgsl_integration_workspace_alloc(nmax)
 
-	status = fgsl_integration_qags(f_obj, -d, u, 0.0_fgsl_double, 1.0e-7_fgsl_double, nmax, wk, result, error)
+	status = fgsl_integration_qags(f_obj, ub, lb, 0.0_fgsl_double, 1.0e-7_fgsl_double, nmax, wk, result, error)
 	IF (status /= 0) THEN
 		CALL logger% log(logger% fatal, "ERROR: fgsl integration failed")
 		ERROR STOP "ERROR: integration failed"
