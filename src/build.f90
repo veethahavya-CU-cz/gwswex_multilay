@@ -162,25 +162,6 @@ SUBROUTINE build(Fyaml_path)
 	! allocate the UZ layers, top, and bottom
 	ALLOCATE(UZ% layer(UZ% nlay), UZ% top(nelements), UZ% bot(UZ% nlay, nelements))
 
-	! read the UZ layer elevations (from config file or specified unformatted file)
-	! UZ% top = yc_model_domain% value_double_1d("top", ires)
-	! IF (ires /= 0) THEN
-	! 	WRITE(strbuffer, *) yc_model_domain% value_str("top", ires)
-	! 	fpath = TRIM(strbuffer)
-	! 	IF (ires /= 0) THEN
-	! 		ERROR STOP "ERROR: top not defined in config file"
-	! 		CALL logger% log(logger%fatal, "top not defined in config file")
-	! 	END IF
-	! 	fpath = TRIM(paths% input)//TRIM(fpath)
-	! 	OPEN(UNIT=tu, FILE=TRIM(fpath), FORM='UNFORMATTED', ACTION='READ', IOSTAT=ires)
-	! 	READ(tu, *) UZ% top
-	! 	CLOSE (UNIT=tu)
-	! 	IF (ires /= 0) THEN
-	! 		ERROR STOP "ERROR: top file not found/readable"
-	! 		CALL logger% log(logger%fatal, "top file not found/readable")
-	! 	END IF
-	! END IF
-
 	IF (yc_path_files% value_int("DMN.TOP", ires) == 0) THEN
 		UZ% top = yc_model_domain% value_double_1d("top", ires)
 	ELSE
@@ -190,23 +171,6 @@ SUBROUTINE build(Fyaml_path)
 		READ(tu, *) UZ% top
 		CLOSE (UNIT=tu)
 	END IF
-
-	! UZ% bot = yc_model_domain% value_double_2d("bot", ires)
-	! IF (ires /= 0) THEN
-	! 	WRITE(strbuffer, *) yc_model_domain% value_str("bot", ires)
-	! 	fpath = TRIM(strbuffer)
-	! 	IF (ires /= 0) THEN
-	! 		ERROR STOP "ERROR: bot not defined in config file"
-	! 		CALL logger% log(logger%fatal, "bot not defined in config file")
-	! 	END IF
-	! 	OPEN(UNIT=tu, FILE=TRIM(fpath), FORM='UNFORMATTED', ACTION='READ', IOSTAT=ires)
-	! 	READ(tu, *) UZ% bot
-	! 	CLOSE (UNIT=tu)
-	! 	IF (ires /= 0) THEN
-	! 		ERROR STOP "ERROR: bot file not found/readable"
-	! 		CALL logger% log(logger%fatal, "bot file not found/readable")
-	! 	END IF
-	! END IF
 
 	IF (yc_path_files% value_int("DMN.BOT", ires) == 0) THEN
 		UZ% bot = yc_model_domain% value_double_2d("bot", ires)
@@ -231,31 +195,8 @@ SUBROUTINE build(Fyaml_path)
 
 		WRITE(strbuffer, *) yc_model_domain_lays(l)% value_str("name", ires)
 		UZ% layer(l)% name = TRIM(strbuffer)
-		! IF (ires /= 0) THEN
-		! 	WRITE(strbuffer, *) "layer", l
-		! 	ERROR STOP "ERROR: undefined name for " // TRIM(strbuffer) // " in config file"
-		! 	CALL logger% log(logger%fatal, "undefined name for " // TRIM(strbuffer) // " in config file")
-		! END IF
 
 		ALLOCATE(UZ% layer(l)% isactive(nelements))
-		! UZ% layer(l)% isactive = yc_model_domain_lays(l)% value_int_1d("isactive", ires)
-		! IF (ires /= 0) THEN
-		! 	WRITE(strbuffer, *) yc_model_domain_lays(l)% value_str("isactive", ires)
-		! 	fpath = TRIM(strbuffer)
-		! 	IF (ires /= 0) THEN
-		! 	WRITE(strbuffer, *) "layer", l
-		! 		ERROR STOP "ERROR: undefined isactive in config file"
-		! 		CALL logger% log(logger%fatal, "undefined isactive for " // TRIM(strbuffer) // " in config file")
-		! 	END IF
-		! 	OPEN(UNIT=tu, FILE=TRIM(fpath), FORM='UNFORMATTED', ACTION='READ', IOSTAT=ires)
-		! 	READ(tu, *) UZ% layer(l)% isactive
-		! 	CLOSE (UNIT=tu)
-		! 	IF (ires /= 0) THEN
-		! 		WRITE(strbuffer, *) "layer", l
-		! 		ERROR STOP "ERROR: undefined isactive in " // TRIM(strbuffer) // " in config file"
-		! 		CALL logger% log(logger%fatal, "undefined isactive for " // TRIM(strbuffer) // " in config file")
-		! 	END IF
-		! END IF
 
 		IF (yc_path_files% value_int("DMN.LAY.ACT", ires) == 0) THEN
 			UZ% layer(l)% isactive = yc_model_domain_lays(l)% value_int_1d("isactive", ires)
@@ -311,24 +252,6 @@ SUBROUTINE build(Fyaml_path)
 
 		ALLOCATE(UZ% layer(l)% ks(nelements), UZ% layer(l)% porosity(nelements))
 
-		! UZ% layer(l)% ks = yc_model_domain_lays(l)% value_double_1d("ks", ires)
-		! IF (ires /= 0) THEN
-		! 	WRITE(strbuffer, *) yc_model_domain_lays(l)% value_str("ks", ires)
-		! 	fpath = TRIM(strbuffer)
-		! 	IF (ires /= 0) THEN
-		! 		WRITE(strbuffer, *) "layer", l
-		! 		ERROR STOP "ERROR: undefined ks in config file"
-		! 		CALL logger% log(logger%fatal, "undefined ks for " // TRIM(strbuffer) // " in config file")
-		! 	END IF
-		! 	OPEN(UNIT=tu, FILE=TRIM(fpath), FORM='UNFORMATTED', ACTION='READ', IOSTAT=ires)
-		! 	READ(tu, *) UZ% layer(l)% ks
-		! 	CLOSE (UNIT=tu)
-		! 	IF (ires /= 0) THEN
-		! 		WRITE(strbuffer, *) "layer", l
-		! 		ERROR STOP "ERROR: undefined ks in " // TRIM(strbuffer) // " in config file"
-		! 		CALL logger% log(logger%fatal, "undefined ks for " // TRIM(strbuffer) // " in config file")
-		! 	END IF
-		! END IF
 
 		IF (yc_path_files% value_int("DMN.LAY.KS", ires) == 0) THEN
 			UZ% layer(l)% ks = yc_model_domain_lays(l)% value_double_1d("ks", ires)
@@ -340,24 +263,6 @@ SUBROUTINE build(Fyaml_path)
 			CLOSE (UNIT=tu)
 		END IF
 
-		! UZ% layer(l)% porosity = yc_model_domain_lays(l)% value_double_1d("porosity", ires)
-		! IF (ires /= 0) THEN
-		! 	WRITE(strbuffer, *) yc_model_domain_lays(l)% value_str("porosity", ires)
-		! 	fpath = TRIM(strbuffer)
-		! 	IF (ires /= 0) THEN
-		! 		WRITE(strbuffer, *) "layer", l
-		! 		ERROR STOP "ERROR: undefined porosity in config file"
-		! 		CALL logger% log(logger%fatal, "undefined porosity for " // TRIM(strbuffer) // " in config file")
-		! 	END IF
-		! 	OPEN(UNIT=tu, FILE=TRIM(fpath), FORM='UNFORMATTED', ACTION='READ', IOSTAT=ires)
-		! 	READ(tu, *) UZ% layer(l)% porosity
-		! 	CLOSE (UNIT=tu)
-		! 	IF (ires /= 0) THEN
-		! 		WRITE(strbuffer, *) "layer", l
-		! 		ERROR STOP "ERROR: undefined porosity in " // TRIM(strbuffer) // " in config file"
-		! 		CALL logger% log(logger%fatal, "undefined porosity for " // TRIM(strbuffer) // " in config file")
-		! 	END IF
-		! END IF
 
 		IF (yc_path_files% value_int("DMN.LAY.POR", ires) == 0) THEN
 			UZ% layer(l)% porosity = yc_model_domain_lays(l)% value_double_1d("porosity", ires)
@@ -393,23 +298,6 @@ SUBROUTINE build(Fyaml_path)
 		READ(tu, *) GW% chd
 		CLOSE (UNIT=tu)
 	END IF
-
-	! GW% chd = yc_model_bnd% value_int_1d("GW_chd", ires)
-	! IF (ires /= 0) THEN
-	! 	WRITE(strbuffer, *) yc_model_bnd% value_str("GW_chd", ires)
-	! 	fpath = TRIM(strbuffer)
-	! 	IF (ires /= 0) THEN
-	! 		ERROR STOP "ERROR: undefined GW_chd in config file"
-	! 		CALL logger% log(logger%fatal, "undefined GW_chd in config file")
-	! 	END IF
-	! 	OPEN(UNIT=tu, FILE=TRIM(fpath), FORM='UNFORMATTED', ACTION='READ', IOSTAT=ires)
-	! 	READ(tu, *) GW% chd
-	! 	CLOSE (UNIT=tu)
-	! 	IF (ires /= 0) THEN
-	! 		ERROR STOP "ERROR: error opening GW_chd file"
-	! 		CALL logger% log(logger%fatal, "error opening GW_chd file")
-	! 	END IF
-	! END IF
 
 
 	IF (yc_path_files% value_int("IC.GW", ires) == 0) THEN
@@ -473,6 +361,6 @@ SUBROUTINE build(Fyaml_path)
 	CALL logger% log(logger%info, "Model built successfully")
 	FLUSH(logger% unit)
 
-	! TODO: read external forcing
+	! TODO: add option under utils to set the number of OMP threads and precision for input files, vars, and output files
 
 END SUBROUTINE

@@ -13,5 +13,6 @@ DO e = 1, nelements
         END IF
     END DO
 END DO
+! TODO: transfer Lstorages to Gstorages at the end of timestep (for GW, SW, UZ, and all active SM layers)
 ! $OMP END PARALLEL DO
 END SUBROUTINE solve_dt

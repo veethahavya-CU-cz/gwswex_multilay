@@ -15,49 +15,6 @@
 
 
 
-! MODULE helpers
-
-! 	IMPLICIT NONE
-
-! 	CONTAINS
-
-!     FUNCTION dtype(var)
-!         USE iso_fortran_env, ONLY: REAL32, REAL64, REAL128, INT8, INT16, INT32, INT64
-
-! 		INTEGER, PARAMETER :: r32 = KIND(REAL32), r64 = KIND(REAL64), r128 = KIND(REAL128), i8 = KIND(INT8), i16 = KIND(INT16), i32 = KIND(INT32), i64 = KIND(INT64)
-
-!         CHARACTER(LEN=7) :: dtype
-!         CLASS(*), INTENT(IN) :: var
-
-!         SELECT TYPE(var)
-!             TYPE IS (REAL(r32))
-!                 dtype = 'REAL32'
-!             TYPE IS (REAL(r64))
-!                 dtype = 'REAL64'
-!             TYPE IS (REAL(r128))
-!                 dtype = 'REAL128'
-!             TYPE IS (INT(i8))
-!                 dtype = 'INT8'
-!             TYPE IS (INT(i16))
-!                 dtype = 'INT16'
-!             TYPE IS (INT(i32))
-!                 dtype = 'INT32'
-!             TYPE IS (INT(i64))
-!                 dtype = 'INT64'
-!             TYPE IS (LOGICAL)
-!                 dtype = 'LOGICAL'
-!             TYPE IS (CHARACTER)
-!                 dtype = 'CHAR*'
-!             CLASS DEFAULT
-!                 dtype = 'UNKNOWN'
-!         END SELECT
-!     END FUNCTION
-! END MODULE helpers
-
-
-
-
-
 MODULE Mtiming
 ! handles model and clock timing operations and manipulations
 	USE iso_fortran_env, ONLY: REAL32, REAL64, REAL128, INT8, INT16, INT32, INT64
@@ -77,7 +34,7 @@ MODULE Mtiming
 		FUNCTION timefetch()
 		! fetches wall clock time via OMP library
 			IMPLICIT NONE
-			REAL(REAL32) :: timefetch
+			REAL(REAL64) :: timefetch
 			timefetch = omp_get_wtime()
 		END FUNCTION timefetch
 
@@ -144,13 +101,13 @@ MODULE Muz
 
 	IMPLICIT NONE
 
-	REAL(REAL32), POINTER :: alpha, n, m, theta_r, theta_s
+	REAL(REAL64), POINTER :: alpha, n, m, theta_r, theta_s
 	TYPE(Clogger) :: logger
 	
 	TYPE CvanG
 	! to store, access, and calculate van Genuchten and -Mualem model parameters
 		! saturation: [m3/m3]
-		REAL(REAL32), POINTER :: alpha, n, m, theta_r, theta_s
+		REAL(REAL64), POINTER :: alpha, n, m, theta_r, theta_s
 		CONTAINS
 			PROCEDURE, PASS :: init
 			PROCEDURE, PASS :: setvars
@@ -162,9 +119,9 @@ MODULE Muz
 	! to store, access, and manipulate UZ layer properties
 		CHARACTER(LEN=64) :: name
 		LOGICAL, DIMENSION(:), ALLOCATABLE :: isactive
-		REAL(REAL32), DIMENSION(:), POINTER :: Aubound, Albound
+		REAL(REAL64), DIMENSION(:), POINTER :: Aubound, Albound
 		TYPE(CvanG), POINTER :: vanG
-		REAL(REAL32), DIMENSION(:), POINTER :: ks, porosity
+		REAL(REAL64), DIMENSION(:), POINTER :: ks, porosity
 	END TYPE Clayer
 
 	CONTAINS
@@ -200,8 +157,8 @@ MODULE Mstorages
 		! nlay (number of real vertical layers): 			[-]		[-] 								{1 - 128}
 		INTEGER(INT8), POINTER :: nlay
 		TYPE(Clayer), DIMENSION(:), ALLOCATABLE :: layer
-		REAL(REAL32), DIMENSION(:), POINTER :: top
-		REAL(REAL32), DIMENSION(:,:), POINTER :: bot
+		REAL(REAL64), DIMENSION(:), POINTER :: top
+		REAL(REAL64), DIMENSION(:,:), POINTER :: bot
 		REAL(REAL128), DIMENSION(:,:), ALLOCATABLE :: Gepv, Lepv
 	END TYPE Cuz
 
@@ -234,12 +191,12 @@ MODULE Mstorages
 		TYPE(CvanG), POINTER :: vanG
 		LOGICAL :: isactive, gw_bound
 		REAL(REAL128), DIMENSION(:), ALLOCATABLE :: Lstorage, Gstorage !, discharge
-		REAL(REAL64) :: Rubound, Rlbound
+		REAL(REAL64), ALLOCATABLE :: Rubound, Rlbound
 		! REAL(REAL128) :: eq, ini
-		REAL(REAL128) :: saturation, saturation_ratio
-		REAL(REAL128) :: IC, ICrat
-		REAL(REAL32), POINTER :: ks, porosity
-		REAL(REAL128) :: kus
+		REAL(REAL128), ALLOCATABLE :: saturation, saturation_ratio
+		REAL(REAL128), ALLOCATABLE :: IC, ICrat
+		REAL(REAL64), POINTER :: ks, porosity
+		REAL(REAL128), ALLOCATABLE :: kus
 	END TYPE Csm_
 
 	TYPE Cuz_
@@ -250,7 +207,7 @@ MODULE Mstorages
 		!? TODO: dz_weights (vlayer thickness weights): 	[-] 	[nlay]								{0 - 1; sum = 1}
 		TYPE(Csm_), DIMENSION(:), ALLOCATABLE :: SM ! 				[nlay]
 		INTEGER(INT8) :: nlay, gws_bnd_lid, gws_bnd_smid
-		REAL(REAL32), POINTER :: Aubound, Albound
+		REAL(REAL64), POINTER :: Aubound, Albound
 		REAL(REAL128) :: thickness
 		LOGICAL :: isactive
 		CONTAINS
