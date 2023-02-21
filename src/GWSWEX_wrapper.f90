@@ -1,5 +1,7 @@
 MODULE GWSWEX
 	USE GWSWEX_model, only: build, init_ts, solve_ts
+    
+    ! TODO: WHILE(time% Gts < time% Gnts) run GWSWEX
 
 	IMPLICIT NONE
 

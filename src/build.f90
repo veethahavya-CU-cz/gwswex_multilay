@@ -16,16 +16,18 @@ SUBROUTINE build(Fyaml_path)
 
 	TYPE(YAMLHandler) :: fyaml
 	TYPE(YAMLMap) :: yp_model, yp_paths, yp_util
-	TYPE(YAMLMap) :: yc_model_domain, yc_path_dirs, yc_path_files, yc_util_logger, yc_model_domain_lays_vanG, yc_model_ic, yc_model_bnd, yc_model_extf
+	TYPE(YAMLMap) :: yc_model_domain, yc_path_dirs, yc_path_files, yc_util_logger, yc_model_domain_lays_vanG, yc_model_ic, &
+					 yc_model_bnd, yc_model_extf, yc_model_solver
 	TYPE(YAMLMap), DIMENSION(:), ALLOCATABLE :: yc_model_domain_lays
-	INTEGER :: ires
+	INTEGER :: ires, Gdt_copy
 
 	LOGICAL :: chk
 
 	CHARACTER(255) :: strbuffer, fpath
 
-	paths% config = TRIM(fyaml_path)
+	time% wall_start = time% wall_start% now()
 
+	paths% config = TRIM(fyaml_path)
 
 
 	! start reading the yaml file
@@ -139,11 +141,24 @@ SUBROUTINE build(Fyaml_path)
 		ERROR STOP "ERROR: tstop < tstart"
 		CALL logger% log(logger%fatal, "tstop < tstart")
 	END IF
+
+	Gdt_copy = time% Gdt% total_seconds()
+	time% Gdt = timedelta(seconds = (time% scratch_td% total_seconds() / time% Gnts))
+	IF(time% Gdt% total_seconds() /= Gdt_copy) THEN
+		WRITE(strbuffer, *) "Provided Gdt does not result in a whole nunmber of global timesteps. Adjusting Gdt to ", time% Gdt% total_seconds(), " s."
+		CALL logger% log(logger% WARN, TRIM(strbuffer))
+	END IF
+
 	WRITE(strbuffer, *) "Model will run for ", time% Gnts, " time steps"
 	CALL logger% log(logger% moreinfo, TRIM(strbuffer))
+
+	time% current = time% Gstart
+	time% elapsed = timedelta(seconds = 0)
+	time% Gts = 1
+
 	time% Lstart = time% Gstart
 	time% Lstop = time% Gstart + time% Gdt
-	time% Gts = 1
+	time% Lts = 1
 	
 	! allocating global storages
 	CALL logger% log(logger% debug, "Allocating global UZ, GW and SW storages")
@@ -207,7 +222,7 @@ SUBROUTINE build(Fyaml_path)
 			READ(tu, *) UZ% layer(l)% isactive
 			CLOSE (UNIT=tu)
 		END IF
-		! TODO: check if all underlying layers are active when one layer is declared as active
+		! (?) TODO: check if all underlying layers are active when one layer is declared as active
 
 		ALLOCATE(UZ% layer(l)% Aubound(nelements), UZ% layer(l)% Albound(nelements))
 		IF (l == 1) THEN
@@ -216,7 +231,7 @@ SUBROUTINE build(Fyaml_path)
 			UZ% layer(l)% Aubound => UZ% bot(l-1, :)
 		END IF
 		UZ% layer(l)% Albound => UZ% bot(l, :)
-		! TODO: check if all bots lie below the tops
+		! TODO: check if all bots lie below the tops or are at least equal to the top
 
 		WRITE(strbuffer, *) "layer", l
 		yc_model_domain_lays_vanG = yc_model_domain_lays(l)% value_map("vanG")
@@ -345,6 +360,15 @@ SUBROUTINE build(Fyaml_path)
 		READ(tu, *) EXTF% et
 		CLOSE (UNIT=tu)
 	END IF
+	CALL yc_model_extf% destroy()
+
+	yc_model_solver = yp_model% value_map("solver settings")
+	ires = SIZE(yc_model_solver% value_double_1d("pet_intensities", ires))
+	ALLOCATE(solver_settings% pet_intensities(ires), solver_settings% pet_nts(ires))
+	ires = 0
+	solver_settings% pet_intensities = yc_model_solver% value_double_1d("pet_intensities", ires)
+	solver_settings% pet_nts = yc_model_solver% value_double_1d("pet_nts", ires)
+	CALL yc_model_solver% destroy()
 
 	CALL yc_path_files% destroy()
 	CALL yp_model% destroy()

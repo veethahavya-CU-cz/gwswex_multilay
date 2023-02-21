@@ -9,7 +9,7 @@
 !	+ C 	- 	class
 
 ! file shorthands:
-!	+ P 	- 	procedure
+!	+ P 	- 	procedures
 
 
 
@@ -18,25 +18,18 @@
 MODULE Mtiming
 ! handles model and clock timing operations and manipulations
 	USE iso_fortran_env, ONLY: REAL32, REAL64, REAL128, INT8, INT16, INT32, INT64
-	USE omp_lib, ONLY: omp_get_wtime
 	USE datetime_module, ONLY: datetime, timedelta
 
 	IMPLICIT NONE
 
 	TYPE Ctime
 	! to store and access temporal information of the model
-		TYPE(datetime) :: Gstart, Gstop, Lstart, Lstop, scratch_dt
-		TYPE(timedelta) :: Gdt, Ldt, scratch_td
+		TYPE(datetime) :: Gstart, Gstop, Lstart, Lstop, current, wall_start, scratch_dt
+		TYPE(timedelta) :: Gdt, Ldt, elapsed, wall_elapsed, scratch_td
 		INTEGER(INT32) :: Gnts, Lnts, Gts, Lts
 	END TYPE Ctime
 
-	CONTAINS
-		FUNCTION timefetch()
-		! fetches wall clock time via OMP library
-			IMPLICIT NONE
-			REAL(REAL64) :: timefetch
-			timefetch = omp_get_wtime()
-		END FUNCTION timefetch
+	! TODO: add a pass procedure to move a ts ahead
 
 END MODULE Mtiming
 
@@ -47,8 +40,8 @@ END MODULE Mtiming
 MODULE Mpaths
 ! to store and access model file/dir paths
 	! root: 		absolute path to the root directory of the model
-	! idir: 		absolute path to the input directory of the model
-	! odir: 		absolute path to the output directory of the model
+	! input: 		absolute path to the input directory of the model
+	! output: 		absolute path to the output directory of the model
 	USE iso_fortran_env, ONLY: REAL32, REAL64, REAL128, INT8, INT16, INT32, INT64
 
 	IMPLICIT NONE
@@ -146,7 +139,7 @@ MODULE Mstorages
 		! storage:											[m] 	[e,t]								{relation defined by the child type}
 		! discharge: 										[m/s] 	[e,t]								{ - }
 		REAL(REAL128), DIMENSION(:,:), ALLOCATABLE :: Gstorage, Lstorage
-		REAL(REAL128), DIMENSION(:,:), ALLOCATABLE :: discharge
+		REAL(REAL128), DIMENSION(:,:), ALLOCATABLE :: Ldischarge
 
 	END TYPE Cstorage
 
@@ -190,7 +183,8 @@ MODULE Mstorages
 		INTEGER(INT8) :: lid
 		TYPE(CvanG), POINTER :: vanG
 		LOGICAL :: isactive, gw_bound
-		REAL(REAL128), DIMENSION(:), ALLOCATABLE :: Lstorage, Gstorage !, discharge
+		REAL(REAL128), DIMENSION(:), ALLOCATABLE :: Lstorage, Gstorage !, Ldischarge
+		REAL(REAL128), DIMENSION(:), ALLOCATABLE :: Lepv, Ldischarge
 		REAL(REAL64), ALLOCATABLE :: Rubound, Rlbound
 		! REAL(REAL128) :: eq, ini
 		REAL(REAL128), ALLOCATABLE :: saturation, saturation_ratio
@@ -203,8 +197,7 @@ MODULE Mstorages
 	! to store, access, and manipulate lumped unsaturated zone parameters
 		! nlay (number of real vertical layers): 			[-] 	[-]									{1 - 128}
 		! Aubound, Albound (abs. upper and lower bounds): 	[m]		[nlay]								{relative to the defined datum}
-		!? TODO: vnaly (number of virtual vertical layers): [-] 	[-]									{1 - 128; nlay*_int_}
-		!? TODO: dz_weights (vlayer thickness weights): 	[-] 	[nlay]								{0 - 1; sum = 1}
+		!? TODO: add option to specify whether the layers are physical or virtual to enable single vanGenuchten parameter set for all layers
 		TYPE(Csm_), DIMENSION(:), ALLOCATABLE :: SM ! 				[nlay]
 		INTEGER(INT8) :: nlay, gws_bnd_lid, gws_bnd_smid
 		REAL(REAL64), POINTER :: Aubound, Albound
@@ -213,7 +206,7 @@ MODULE Mstorages
 		CONTAINS
 			PROCEDURE, PASS :: init
 			PROCEDURE, PASS :: resolve
-			! PROCEDURE, PASS :: solve_dt
+			PROCEDURE, PASS :: solve
 	END TYPE Cuz_
 
 	TYPE Cext_forcings
@@ -229,6 +222,16 @@ MODULE Mstorages
 END MODULE Mstorages
 
 
+MODULE Msolver
+	USE iso_fortran_env, ONLY: REAL32, REAL64, REAL128, INT8, INT16, INT32, INT64
+
+	TYPE Csettings
+		REAL, DIMENSION(:), ALLOCATABLE :: pet_intensities
+		INTEGER(INT8), DIMENSION(:), ALLOCATABLE :: pet_nts
+	END TYPE Csettings
+END MODULE Msolver
+
+
 
 
 
@@ -239,6 +242,7 @@ MODULE GWSWEX_model
 	USE Mtiming, ONLY: Ctime
 	USE Muz, ONLY: Clayer
 	USE Mstorages, ONLY: Cuz, Cgw, Csw, Cuz_, Cext_forcings
+	USE Msolver, ONLY: Csettings
 
 	IMPLICIT NONE
 
@@ -255,12 +259,14 @@ MODULE GWSWEX_model
 	TYPE(Cuz_), DIMENSION(:), ALLOCATABLE :: UZ_
 
 	TYPE(Cext_forcings) :: EXTF
+
+	TYPE(Csettings) :: solver_settings
 	
 	INTEGER, PARAMETER  :: lu=42, tu=99
 
 	CONTAINS
 		INCLUDE 'build.f90'
 		INCLUDE 'init_ts.f90'
-		! !INCLUDE 'solve_ts.f90'
+		INCLUDE 'solve_ts.f90'
 
 END MODULE GWSWEX_model

@@ -14,25 +14,22 @@ SUBROUTINE init(self, UZ, GW, time, e)
 
     ! calculate and allocate the number oƒ active SM layers for element e
     self% nlay = 0
+    tmpcnt = 1
+
+    ! associte the SM layers with the respective UZ layers and allocate the SM storages for all active layers for element e
     DO ln = 1, UZ% nlay
         IF (UZ% layer(ln)% isactive(e)) THEN
             self% nlay = self% nlay + 1
+            self% SM(tmpcnt)% lid = ln
+            ALLOCATE(self% SM(tmpcnt)% Gstorage(time% Gnts))
+            tmpcnt = tmpcnt + 1
         END IF
+        ! deactivate the SM layer and set the GW bound flag to false by default
+        self% SM(tmpcnt)% isactive = .FALSE.
+        self% SM(tmpcnt)% gw_bound = .FALSE.
     END DO
     ALLOCATE(self% SM(self% nlay))
 
-    ! associte the SM layers with the respective UZ layers and allocate the SM storages for all active layers for element e
-    tmpcnt = 1
-    DO ln = 1, UZ% nlay
-        IF (UZ% layer(ln)% isactive(e)) THEN
-            self% SM(tmpcnt)% lid = ln
-            ALLOCATE(self% SM(tmpcnt)% Gstorage(time% Gnts))
-            ! deactivate the SM layer and set the GW bound flag to false by default
-            self% SM(tmpcnt)% isactive = .FALSE.
-            self% SM(tmpcnt)% gw_bound = .FALSE.
-            tmpcnt = tmpcnt + 1
-        END IF
-    END DO
 
     ! initialize active SM layer bounds, set initial storages (SMeq), and flag GW bound SM layer for element e
     DO smn = 1, self% nlay
@@ -51,6 +48,7 @@ SUBROUTINE init(self, UZ, GW, time, e)
 
             ! set the initial condition for each SM layer to SMeq
             ! TODO: check how the bounds work with vanGI calc on a seperate py script
+            CALL self% SM(smn)% vanG% setvars()
             self% SM(smn)% Gstorage(1) = self% SM(smn)% vanG% integrate(self% SM(smn)% Rubound, self% SM(smn)% Rlbound)
             UZ_storage_sum = UZ_storage_sum + self% SM(smn)% Gstorage(1)
 
@@ -75,10 +73,9 @@ SUBROUTINE init(self, UZ, GW, time, e)
         self% isactive = .FALSE.
     ELSE
         self% Aubound => UZ% layer(self% SM(1)% lid)% Aubound(e)
-    self% Albound = GW% Gstorage(e,1)
-    self% thickness = self% Aubound - GW% Gstorage(e,1)
+        self% Albound = GW% Gstorage(e,1)
+        self% thickness = self% Aubound - GW% Gstorage(e,1)
     END IF
-
 
 END SUBROUTINE init
 
@@ -92,8 +89,8 @@ SUBROUTINE resolve(self, UZ, GW, time, e)
     TYPE(Cuz), INTENT(IN) :: UZ
     TYPE(Cgw), INTENT(IN) :: GW
     TYPE(Ctime), INTENT(IN) :: time
-    INTEGER(INT8) :: smn
     INTEGER(INT32), INTENT(IN) :: e
+    INTEGER(INT8) :: smn
 
     IF (.NOT. ( (GW% Lstorage(e,time% Lts) < UZ% layer(self% gws_bnd_smid)% Aubound(e)) .AND. (GW% Lstorage(e,time% Lts) > UZ% layer(self% gws_bnd_smid)% Albound(e)) ) ) THEN
     ! if GWS does not lie within gws_bnd_smid layer
@@ -115,11 +112,13 @@ SUBROUTINE resolve(self, UZ, GW, time, e)
                     self% gws_bnd_smid = smn
                     self% gws_bnd_lid = self% SM(self% gws_bnd_smid)% lid
                     ALLOCATE(self% SM(smn)% Lstorage(time% Lnts))
+                    CALL self% SM(smn)% vanG% setvars()
                     self% SM(smn)% Lstorage(time% Lts) = self% SM(smn)% vanG% integrate(self% SM(smn)% Rubound, self% SM(smn)% Rlbound)
                     ! TODO: subtract this (SMeq) from the GW storage ?(until a convergence threshold is reached i.e. GWS is not changing by a significant amount)
                     EXIT
                 ELSE
                     ALLOCATE(self% SM(smn)% Lstorage(time% Lnts))
+                    CALL self% SM(smn)% vanG% setvars()
                     self% SM(smn)% Lstorage(time% Lts) = self% SM(smn)% vanG% integrate(self% SM(smn)% Rubound, self% SM(smn)% Rlbound)
                     ! TODO: subtract this (SMeq) from the GW storage ?(until a convergence threshold is reached i.e. GWS is not changing by a significant amount)
                 END IF
@@ -141,26 +140,50 @@ SUBROUTINE resolve(self, UZ, GW, time, e)
                     self% gws_bnd_smid = smn
                     self% gws_bnd_lid = self% SM(self% gws_bnd_smid)% lid
                     ALLOCATE(self% SM(smn)% Lstorage(time% Lnts))
+                    CALL self% SM(smn)% vanG% setvars()
                     self% SM(smn)% Lstorage(time% Lts) = self% SM(smn)% vanG% integrate(self% SM(smn)% Rubound, self% SM(smn)% Rlbound)
                     ! TODO: subtract this (SMeq) from the GW storage ?(until a convergence threshold is reached i.e. GWS is not changing by a significant amount)
                     EXIT
                 ELSE
                     self% SM(smn)% gw_bound = .FALSE.
                     self% SM(smn)% isactive = .FALSE.
-                    ! TODO: subtract this (SMeq) from the GW storage ?(until a convergence threshold is reached i.e. GWS is not changing by a significant amount)
+                    ! TODO: transfer the Lstorage to the GW storage ?(until a convergence threshold is reached i.e. GWS is not changing by a significant amount)
                     DEALLOCATE(self% SM(smn)% Lstorage, self% SM(smn)% Rubound, self% SM(smn)% Rlbound)
                 END IF
             END DO
         END IF
     ELSE
+    ! if GWS lies within the bounds of the gws_bnd layer
         self% SM(self% gws_bnd_smid)% Rubound = GW% Lstorage(e,time% Lts) - UZ% layer(self% gws_bnd_lid)% Aubound(e) ! ub = GWS - L_Aub
         self% SM(self% gws_bnd_smid)% Rlbound = GW% Lstorage(e,time% Lts) - UZ% layer(self% gws_bnd_lid)% Albound(e) ! ub = GWS - L_Alb
         ! TODO: calculate the new SMeq?
     END IF
 
+! TODO: calculate UZ storage by summing storages of all active SM alyers
+! TODO: calculate UZ epv and SMeqs
+! set the bounds of UZ and calculate its thickness if UZ is active for element e
+    IF (.NOT. self% SM(1)% isactive) THEN
+        self% isactive = .FALSE.
+    END IF
+
+    self% Albound = GW% Lstorage(e,time% Lts)
+    self% thickness = self% Aubound - self% Albound
+
 END SUBROUTINE resolve
 
 
-! SUBROUTINE solve_dt()
 
-! END SUBROUTINE solve_dt
+SUBROUTINE solve(self, UZ, GW, time, e)
+
+    USE Mtiming, ONLY : Ctime
+
+    CLASS(Cuz_), INTENT(INOUT) :: self
+    TYPE(Cuz), INTENT(IN) :: UZ
+    TYPE(Cgw), INTENT(IN) :: GW
+    TYPE(Ctime), INTENT(IN) :: time
+    INTEGER(INT32), INTENT(IN) :: e
+
+    CONTINUE
+    !!! TODO: do not forget to set vanG% setvars() before calling vanG% integrate()
+
+END SUBROUTINE solve

@@ -54,7 +54,7 @@ SUBROUTINE log_real(self, lv, msg, val, addnl_val)
 
     IF (lv < self% level .OR. lv == self% level) THEN
         IF (PRESENT(addnl_val)) THEN
-            WRITE(self% unit,*) buffer, ": ", lv, msg, val, addnl_val
+            WRITE(self% unit,*) buffer, ": ", msg, val, addnl_val
         ELSE
             WRITE(self% unit,*) buffer, ": ", msg, val
         ENDIF
@@ -76,7 +76,7 @@ SUBROUTINE log_int(self, lv, msg, val, addnl_val)
 
     IF (lv < self% level .OR. lv == self% level) THEN
         IF (PRESENT(addnl_val)) THEN
-            WRITE(self% unit,*) buffer, ": ", lv, msg, val, addnl_val
+            WRITE(self% unit,*) buffer, ": ", msg, val, addnl_val
         ELSE
             WRITE(self% unit,*) buffer, ": ", msg, val
         ENDIF

@@ -166,11 +166,18 @@ gwsewex_config['model']['initial conditions'] = {}
 gwsewex_config['model']['initial conditions']['GW'] = 'GW.ip'
 gwsewex_config['model']['initial conditions']['SW'] = 'SW.ip'
 
+gwsewex_config['model']['external forcings'] = {}
+gwsewex_config['model']['external forcings']['p'] = 'p.ip'
+gwsewex_config['model']['external forcings']['et'] = 'et.ip'
 
+gwsewex_config['model']['solver settings'] = {}
+gwsewex_config['model']['solver settings']['pet_intensities'] = [2.78e-7, 5.56e-7, 8.33e-7, 13.89e-7, 19.44e-7, 27.78e-7, 41.667e-7] #[1, 2, 3, 5, 7, 10, 15] mm/h
+gwsewex_config['model']['solver settings']['pet_nts'] = [1, 3, 5, 10, 15, 20, 30] # nts
 
 gwsewex_config['paths'] = {}
 gwsewex_config['paths']['dirs'] = {'root': str(os.getcwd()), 'input': str(os.getcwd()), 'output': str(os.getcwd())}
-gwsewex_config['paths']['files'] = {'log': 'GWSWEX_.log'}
+gwsewex_config['paths']['files'] = {'log': 'GWSWEX_.log', 'DMN.TOP': 1, 'DMN.BOT': 1, 'DMN.TOP': 1, 'DMN.LAY.ACT': 1, 'DMN.LAY.KS': 1, 'DMN.LAY.POR': 1, \
+									'BND.CHD': 1, 'IC.GW': 1, 'IC.SW': 1, 'EXTF.p': 1, 'EXTF.et': 1}
 
 gwsewex_config['utils'] = {}
 gwsewex_config['utils']['logger'] = {'level': 1}
