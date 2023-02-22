@@ -1,11 +1,14 @@
-SUBROUTINE init_ts(auto_advance)
+SUBROUTINE init_ts(gw_ini, sw_ini, auto_advance)
 	USE datetime_module, ONLY: timedelta, datetime
 
 	IMPLICIT NONE
 
 	LOGICAL, INTENT(IN), OPTIONAL :: auto_advance
+
 	INTEGER(INT16) :: idx
 	CHARACTER(LEN=256) :: strbuffer
+
+	REAL(REAL64), INTENT(INOUT), DIMENSION(nelements) :: gw_ini, sw_ini
 	REAL(REAL32) :: ipet_ll, ipet_ul, pet_intensity
 
 	DEALLOCATE(GW% Lstorage, UZ% Lstorage, UZ% Lepv, SW% Lstorage, GW% Ldischarge, UZ% Ldischarge, SW% Ldischarge)
@@ -30,7 +33,10 @@ SUBROUTINE init_ts(auto_advance)
 		time% Gts = time% Gts + 1
 	END IF
 
-	time% Lstart = time% Gstart + timedelta(seconds = time% Gdt% total_seconds() * time% Gnts-1) ! time% current
+	time% Lstart = time% Gstart + timedelta(seconds = time% Gdt% total_seconds() * time% Gnts-1)
+	time% current = time% Lstart
+	time% elapsed = time% current - time% Gstart
+	time% wall_elapsed = time% wall_start% now() - time% wall_start
 	time% Lstop = time% Lstart + time% Gdt
 
 	CALL logger% log(logger% INFO, "Local simulation period starts at " // TRIM(time% Lstart% strftime("%Y-%m-%d %H:%M:%S")))
@@ -79,9 +85,9 @@ SUBROUTINE init_ts(auto_advance)
 	! $OMP END PARALLEL DO
 
 	! set local storage to the global storage of last dt (or initial conditions for first dt)
-	GW% Lstorage(:, 1) = GW% Gstorage(:, time% Gts-1)
+	GW% Lstorage(:, 1) = gw_ini
 	UZ% Lstorage(:, 1) = UZ% Gstorage(:, time% Gts-1)
-	SW% Lstorage(:, 1) = SW% Gstorage(:, time% Gts-1)
+	SW% Lstorage(:, 1) = sw_ini
 	
 	FLUSH(logger% unit)
 END SUBROUTINE

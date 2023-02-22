@@ -226,7 +226,9 @@ MODULE Msolver
 	USE iso_fortran_env, ONLY: REAL32, REAL64, REAL128, INT8, INT16, INT32, INT64
 
 	TYPE Csettings
-		REAL, DIMENSION(:), ALLOCATABLE :: pet_intensities
+		INTEGER(INT8) :: max_iterations
+		REAL(REAL64) :: GW_tolerance, SW_tolerance
+		REAL(REAL64), DIMENSION(:), ALLOCATABLE :: pet_intensities
 		INTEGER(INT8), DIMENSION(:), ALLOCATABLE :: pet_nts
 	END TYPE Csettings
 END MODULE Msolver

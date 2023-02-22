@@ -176,11 +176,11 @@ gwsewex_config['model']['solver settings']['pet_nts'] = [1, 3, 5, 10, 15, 20, 30
 
 gwsewex_config['paths'] = {}
 gwsewex_config['paths']['dirs'] = {'root': str(os.getcwd()), 'input': str(os.getcwd()), 'output': str(os.getcwd())}
-gwsewex_config['paths']['files'] = {'log': 'GWSWEX_.log', 'DMN.TOP': 1, 'DMN.BOT': 1, 'DMN.TOP': 1, 'DMN.LAY.ACT': 1, 'DMN.LAY.KS': 1, 'DMN.LAY.POR': 1, \
+gwsewex_config['paths']['files'] = {'DMN.TOP': 1, 'DMN.BOT': 1, 'DMN.TOP': 1, 'DMN.LAY.ACT': 1, 'DMN.LAY.KS': 1, 'DMN.LAY.POR': 1, \
 									'BND.CHD': 1, 'IC.GW': 1, 'IC.SW': 1, 'EXTF.p': 1, 'EXTF.et': 1}
 
 gwsewex_config['utils'] = {}
-gwsewex_config['utils']['logger'] = {'level': 1}
+gwsewex_config['utils']['logger'] = {'level': 1, 'fname': 'GWSWEX.log'}
 
 with open(fyaml_path, 'w') as fyaml_path:
 	yaml.dump(gwsewex_config, fyaml_path, default_flow_style=False, allow_unicode=True, sort_keys=False)

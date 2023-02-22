@@ -69,13 +69,6 @@ SUBROUTINE build(Fyaml_path)
 		ERROR STOP "ERROR: specified output dir does not exist"
 	END IF
 
-	WRITE(strbuffer, *) yc_path_files% value_str("log", ires)
-	logger% fpath = strbuffer
-	IF (ires /= 0) THEN
-		logger% fpath = 'GWSWEX.log'
-	END IF
-	logger% fpath = TRIM(paths% output)//TRIM(logger% fpath)
-
 	CALL yc_path_dirs% destroy()
 	CALL yp_paths% destroy()
 
@@ -90,8 +83,16 @@ SUBROUTINE build(Fyaml_path)
 	logger% unit = tu
 	CALL logger% init()
 	CALL logger% log(logger% info, "Initializing model from config file")
-	CALL yp_util% destroy()
+
+	WRITE(strbuffer, *) yc_util_logger% value_str("fname", ires)
+	logger% fpath = strbuffer
+	IF (ires /= 0) THEN
+		logger% fpath = 'GWSWEX.log'
+	END IF
+	logger% fpath = TRIM(paths% output)//"//"//TRIM(logger% fpath)
+
 	CALL yc_util_logger% destroy()
+	CALL yp_util% destroy()
 
 
 	! read and set the model parameters
