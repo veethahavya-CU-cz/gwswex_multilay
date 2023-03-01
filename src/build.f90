@@ -234,12 +234,13 @@ SUBROUTINE build(Fyaml_path)
 		vanG_pars = yc_model_domain_lays(l)% value_double_1d("vanG", ires)
 
 		ALLOCATE(UZ% layer(l)% vanG)
-		ALLOCATE(UZ% layer(l)% vanG% alpha, UZ% layer(l)% vanG% n, UZ% layer(l)% vanG% theta_r, UZ% layer(l)% vanG% theta_s)
+		ALLOCATE(UZ% layer(l)% vanG% alpha, UZ% layer(l)% vanG% n, UZ% layer(l)% vanG% m, UZ% layer(l)% vanG% theta_r, UZ% layer(l)% vanG% theta_s)
 
 		UZ% layer(l)% vanG% alpha = vanG_pars(1)
 		UZ% layer(l)% vanG% n = vanG_pars(2)
 		UZ% layer(l)% vanG% theta_r = vanG_pars(3)
 		UZ% layer(l)% vanG% theta_s = vanG_pars(4)
+		CALL UZ% layer(l)% vanG% init()
 
 		ALLOCATE(UZ% layer(l)% ks(nelements), UZ% layer(l)% porosity(nelements))
 
@@ -362,12 +363,9 @@ SUBROUTINE build(Fyaml_path)
 
 	! $OMP PARALLEL DO
 	DO e = 1, nelements
-write(*,*) "!!! loop start !!!"
 		CALL UZ_(e)% init(e, UZ, GW, time)
-		write(*,*) "!!! called !!!"
 	END DO
 	! $OMP END PARALLEL DO
-write(*,*) "!!! DONE !!!"
 
 	CALL yaml_close_file(fyaml)
 

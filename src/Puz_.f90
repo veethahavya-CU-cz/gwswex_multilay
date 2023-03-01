@@ -64,12 +64,10 @@ SUBROUTINE init(self, e, UZ, GW, time)
             pSM_% RWlbound = GW% Gstorage(e,1) - MAX(GW% Gstorage(e,1), pSM_% ADlbound) ! ub = GWS - MAX(GWS, L_Alb)
 
             ! set the initial condition for each SM layer to SMeq
-            ! TODO: check how the bounds work with vanGI calc on a seperate py script
             CALL pSM_% vanG% setvars()
             pSM_% Gstorage(1) = pSM_% vanG% integrate(pSM_% RWubound, pSM_% RWlbound)
 
             UZ_storage_sum = UZ_storage_sum + pSM_% Gstorage(1)
-
             IF (GW% Gstorage(e,1) > pSM_% ADlbound .OR. GW% Gstorage(e,1) == pSM_% ADlbound) THEN
             ! set the GW bound flag if the GWS lies above the Albound of the layer i.e. GWS lies within the layer and skip checking the underlying SM layers
                 self% Albound => GW% Gstorage(e,1)

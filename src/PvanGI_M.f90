@@ -1,50 +1,12 @@
 ! This file is part of the vanGI_M module - MvanGI_M. It defines the procedures contained within the module.
 
-SUBROUTINE init(self, ymodel_vanG_args, loggerobj)
-! initializes the van Genuchten model parameters by reading them from the config file
-	USE Mlogger, only : Clogger
-
+SUBROUTINE init(self)
+! initializes the van Genuchten model parameters
 	CLASS(CvanG) :: self
-	CLASS(Clogger), INTENT(IN) :: loggerobj
-	TYPE(YAMLMap), INTENT(INOUT) :: ymodel_vanG_args
-	INTEGER :: ires
-	CHARACTER(len=128) :: logbuffer
-
-	logger = loggerobj
-
-	self% alpha = ymodel_vanG_args% value_double('alpha', ires)
-	IF (ires /= 0) THEN
-		CALL logger% log(logger% error, "vanG model parameter - alpha not found in config file")
-		ERROR STOP "ERROR: vanG model parameter - alpha not found in config file"
-	END IF
-
-	self% n = ymodel_vanG_args% value_double('n', ires)
-	IF (ires /= 0) THEN
-		CALL logger% log(logger% error, "vanG model parameter - n not found in config file")
-		ERROR STOP "ERROR: vanG model parameter - n not found in config file"
-	END IF
 
 	self% m = (1-(1/self% n))
-	IF (ires /= 0) THEN
-		CALL logger% log(logger% error, "vanG model parameter - m not found in config file")
-		ERROR STOP "ERROR: vanG model parameter - m not found in config file"
-	END IF
 
-	self% theta_r = ymodel_vanG_args% value_double('theta_r', ires)
-	IF (ires /= 0) THEN
-		CALL logger% log(logger% error, "vanG model parameter - theta_r not found in config file")
-		ERROR STOP "ERROR: vanG model parameter - theta_r not found in config file"
-	END IF
-
-	self% theta_s = ymodel_vanG_args% value_double('theta_s', ires)
-	IF (ires /= 0) THEN
-		CALL logger% log(logger% error, "vanG model parameter - theta_s not found in config file")
-		ERROR STOP "ERROR: vanG model parameter - theta_s not found in config file"
-	END IF
-
-	WRITE(*, logbuffer) "vanG pars initialized:   ", "alpha = ", self% alpha, " n = ", self% n, " m = ", self% m, " theta_r = ", self% theta_r, " theta_s = ", self% theta_s
-	CALL logger% log(logger% trace, TRIM(logbuffer))
-	
+	ALLOCATE(alpha, n, m, theta_r, theta_s)
 END SUBROUTINE init
 
 

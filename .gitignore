@@ -3,6 +3,7 @@
 *.mod
 *.o
 src/f2py_scratch
+ssrc/.archive
 libs
 *.ip
 *.op
