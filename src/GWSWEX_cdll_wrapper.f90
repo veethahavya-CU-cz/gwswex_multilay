@@ -10,15 +10,17 @@ MODULE GWSWEX
 
 
         SUBROUTINE wrap_init(Fyaml_path_c) BIND(C, name='initialize')
-            USE model, ONLY: build
+            USE model, ONLY: build, GW, SW
             USE iso_c_binding, only: c_char
+            USE iso_fortran_env, only: REAL64
 
             IMPLICIT NONE
 
-            character(LEN=1, KIND=c_char), intent(in), TARGET :: Fyaml_path_c(256)
+            CHARACTER(LEN=1, KIND=c_char), INTENT(IN), TARGET :: Fyaml_path_c(256)
             CHARACTER, DIMENSION(256) :: Fyaml_path_f
             CHARACTER(256), POINTER :: Fyaml_path
 
+            REAL(REAL64), DIMENSION(:), ALLOCATABLE :: gw_ini, sw_ini
             INTEGER :: i
 
             ! Fyaml_path => Fyaml_path_c(1)
@@ -36,6 +38,10 @@ MODULE GWSWEX
             ! WRITE(*,*) "Fyaml_path_c: ", Fyaml_path_c
 
             CALL build(TRIM(Fyaml_path))
+
+            ALLOCATE(gw_ini(SIZE(GW% Gstorage(:,1))), sw_ini(SIZE(SW% Gstorage(:,1))))
+
+            CALL init_ts(gw_ini, sw_ini, auto_advance=.FALSE.)
         END SUBROUTINE wrap_init
 
 
