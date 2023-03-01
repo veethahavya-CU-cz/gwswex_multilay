@@ -25,11 +25,11 @@ SUBROUTINE solve(e, first_run, lateral_GW_flux, lateral_SW_flux)
 
     dt = time% Ldt% total_seconds()
     t => time% Lts
-
+write(*,*) "!!! HERE !!!"
     porosity_gwbnd_above => UZ_(e)% SM(UZ_(e)% gws_bnd_smid-1)% porosity
     porosity_gwbnd => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)% porosity
     porosity_gwbnd_below => UZ_(e)% SM(UZ_(e)% gws_bnd_smid+1)% porosity
-
+write(*,*) "!!! HERE !!!"
     DO t = 2, time% Lnts
         time% Lts = t
 
@@ -164,7 +164,7 @@ END SUBROUTINE solve
 SUBROUTINE solve_ts()
 
     IMPLICIT NONE
-   
+
     ! SCHEDULE(DYNAMIC) OR SCHEDULE(GUIDED) OR SCHEDULE(DYNAMIC): http://www.inf.ufsc.br/~bosco.sobral/ensino/ine5645/OpenMP_Dynamic_Scheduling.pdf || 
     !   https://610yilingliu.github.io/2020/07/15/ScheduleinOpenMP/
 

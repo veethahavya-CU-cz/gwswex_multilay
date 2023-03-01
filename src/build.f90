@@ -71,7 +71,7 @@ SUBROUTINE build(Fyaml_path)
 	IF (ires /= 0) THEN
 		ERROR STOP "ERROR: logger level not found/incorrect in config file"
 	END IF
-	logger% unit = tu
+	logger% unit = lu
 
 	WRITE(strbuffer, *) yc_util_logger% value_str("fname", ires)
 	logger% fname = strbuffer
@@ -193,7 +193,6 @@ SUBROUTINE build(Fyaml_path)
 	END IF
 
 	CALL logger% log(logger% moreinfo, "Layer elevations read")
-	FLUSH(logger% unit)
 
 	ALLOCATE(yc_model_domain_lays(UZ% nlay))
 
@@ -370,7 +369,5 @@ SUBROUTINE build(Fyaml_path)
 	CALL yaml_close_file(fyaml)
 
 	CALL logger% log(logger%info, "Model built successfully")
-
-	FLUSH(logger% unit)
 
 END SUBROUTINE

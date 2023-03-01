@@ -90,4 +90,4 @@ fwrite('et.ip', et)
 #%%
 GWSWEX.initialize(Fyaml)
 
-GWSWEX.solve()
+# GWSWEX.solve()

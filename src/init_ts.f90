@@ -56,6 +56,7 @@ SUBROUTINE init_ts(gw_ini, sw_ini, auto_advance)
 
 	! calculate the average PET intensity over the spatial domain for this Gts
 	pet_intensity = (SUM(ABS(EXTF% p(:, time% Gts))) + SUM(ABS(EXTF% et(:, time% Gts)))) / nelements
+write(*,*) pet_intensity
 	! set the local timestep size based on the average PET intensity
 	ipet_ll = 0.0
 	DO idx = 1, SIZE(solver_settings% pet_intensities)

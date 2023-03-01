@@ -10,9 +10,8 @@ MODULE GWSWEX
 
 
         SUBROUTINE wrap_init(Fyaml_path_c) BIND(C, name='initialize')
-            USE model, ONLY: build, GW, SW
+            USE model, ONLY: build
             USE iso_c_binding, only: c_char
-            USE iso_fortran_env, only: REAL64
 
             IMPLICIT NONE
 
@@ -20,7 +19,6 @@ MODULE GWSWEX
             CHARACTER, DIMENSION(256) :: Fyaml_path_f
             CHARACTER(256), POINTER :: Fyaml_path
 
-            REAL(REAL64), DIMENSION(:), ALLOCATABLE :: gw_ini, sw_ini
             INTEGER :: i
 
             ! Fyaml_path => Fyaml_path_c(1)
@@ -39,9 +37,7 @@ MODULE GWSWEX
 
             CALL build(TRIM(Fyaml_path))
 
-            ALLOCATE(gw_ini(SIZE(GW% Gstorage(:,1))), sw_ini(SIZE(SW% Gstorage(:,1))))
-
-            CALL init_ts(gw_ini, sw_ini, auto_advance=.FALSE.)
+            
         END SUBROUTINE wrap_init
 
 
@@ -52,7 +48,8 @@ MODULE GWSWEX
             !TYPE(Clogger), DIMENSION(7) :: logger_array
             REAL(8), DIMENSION(:), INTENT(INOUT) :: gw_ini, sw_ini
 
-            CALL init_ts(gw_ini, sw_ini)
+            CALL init_ts(gw_ini, sw_ini, auto_advance=.FALSE.)
+write(*,*) "!!! HERE !!!"
             CALL solve_ts()
         END SUBROUTINE wrap_run
 

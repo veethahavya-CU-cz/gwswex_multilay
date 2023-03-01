@@ -50,13 +50,13 @@ SUBROUTINE log_real(self, lv, msg, val, addnl_val)
     REAL(REAL64), OPTIONAL :: addnl_val
 
     self% timer = self% timer% now()
-    buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(self% timer% strftime("%H:%M:%S"))//"]"
+    buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(ADJUSTL(self% timer% strftime("%H:%M:%S")))//"]"
 
     IF (lv < self% level .OR. lv == self% level) THEN
         IF (PRESENT(addnl_val)) THEN
-            WRITE(self% unit,*) buffer, ": ", msg, val, addnl_val
+            WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val, addnl_val
         ELSE
-            WRITE(self% unit,*) buffer, ": ", msg, val
+            WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val
         ENDIF
     END IF
 END SUBROUTINE log_real
@@ -72,13 +72,13 @@ SUBROUTINE log_int(self, lv, msg, val, addnl_val)
     INTEGER, OPTIONAL :: addnl_val
 
     self% timer = self% timer% now()
-    buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(self% timer% strftime("%H:%M:%S"))//"]"
+    buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(ADJUSTL(self% timer% strftime("%H:%M:%S")))//"]"
 
     IF (lv < self% level .OR. lv == self% level) THEN
         IF (PRESENT(addnl_val)) THEN
-            WRITE(self% unit,*) buffer, ": ", msg, val, addnl_val
+            WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val, addnl_val
         ELSE
-            WRITE(self% unit,*) buffer, ": ", msg, val
+            WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val
         ENDIF
     END IF
 END SUBROUTINE log_int
@@ -92,9 +92,9 @@ SUBROUTINE log_str(self, lv, msg)
     CHARACTER(len=32) :: buffer
 
     self% timer = self% timer% now()
-    buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(self% timer% strftime("%H:%M:%S"))//"]"
+    buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(ADJUSTL(self% timer% strftime("%H:%M:%S")))//"]"
 
     IF (lv < self% level .OR. lv == self% level) THEN
-        WRITE(self% unit,*) buffer, ": ", msg
+        WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg
     END IF
 END SUBROUTINE log_str

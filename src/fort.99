@@ -1,4 +1,0 @@
- [INFO] [17:31:56]               : Model built successfully
- [INFO] [17:31:56]               : Local simulation period starts at 2020-06-28 23:59:59
- [WARN] [17:31:56]               :  The local simulation period is too short for the given time step size. Resetting the time step size to local simulation period length.
- [INFO] [17:31:56]               :  Initializing local simulation period with a timestep of    3600.0000000000000       s.                                                                                                                                                                         
