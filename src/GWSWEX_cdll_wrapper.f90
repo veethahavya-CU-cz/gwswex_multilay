@@ -7,38 +7,39 @@ MODULE GWSWEX
 	IMPLICIT NONE
 
     CONTAINS
-        SUBROUTINE wrap_init(Fyaml_path_f) !BIND(C, name='initialize')
+
+
+        SUBROUTINE wrap_init(Fyaml_path_c) BIND(C, name='initialize')
             USE model, ONLY: build
-            ! USE iso_c_binding, only: c_char
+            USE iso_c_binding, only: c_char
 
             IMPLICIT NONE
 
-            ! character(LEN=1, KIND=c_char), intent(in), TARGET :: Fyaml_path_c(256)
-            CHARACTER(256), INTENT(IN) :: Fyaml_path_f
-            ! CHARACTER(256), POINTER :: Fyaml_path
+            character(LEN=1, KIND=c_char), intent(in), TARGET :: Fyaml_path_c(256)
+            CHARACTER, DIMENSION(256) :: Fyaml_path_f
+            CHARACTER(256), POINTER :: Fyaml_path
 
             INTEGER :: i
 
             ! Fyaml_path => Fyaml_path_c(1)
-            ! ALLOCATE(Fyaml_path)
-            ! Fyaml_path_f = Fyaml_path_c
+            ALLOCATE(Fyaml_path)
+            Fyaml_path_f = Fyaml_path_c
             ! WRITE(Fyaml_path, *) Fyaml_path_f
 
-            ! DO i = 1, 256
-            !     Fyaml_path(i:i) = Fyaml_path_f(i)
-            ! END DO
+            DO i = 1, 256
+                Fyaml_path(i:i) = Fyaml_path_f(i)
+            END DO
 
             ! write(*,*) "Fyaml_path: ", Fyaml_path
             ! WRITE(*,*) "Fyaml_path: ", TRIM(Fyaml_path)
             ! WRITE(*,*) "Fyaml_path_f: ", Fyaml_path_f
             ! WRITE(*,*) "Fyaml_path_c: ", Fyaml_path_c
-            write(*,*) "Fyaml_path_f: ", TRIM(Fyaml_path_f)
 
-            CALL build(TRIM(Fyaml_path_f))
+            CALL build(TRIM(Fyaml_path))
         END SUBROUTINE wrap_init
 
 
-        SUBROUTINE wrap_run(gw_ini, sw_ini) !BIND(C, name='solve')
+        SUBROUTINE wrap_run(gw_ini, sw_ini) BIND(C, name='solve')
         USE model, ONLY: init_ts, solve_ts
             IMPLICIT NONE
             !custom type usage (!but not def) possible here
@@ -50,7 +51,7 @@ MODULE GWSWEX
         END SUBROUTINE wrap_run
 
 
-        SUBROUTINE wrap_resolve(GWS_ext, SWS_ext) !BIND(C, name='resolve')
+        SUBROUTINE wrap_resolve(GWS_ext, SWS_ext) BIND(C, name='resolve')
             USE model, ONLY: resolve_ts
             IMPLICIT NONE
             !custom type usage (!but not def) possible here

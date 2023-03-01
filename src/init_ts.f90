@@ -38,6 +38,7 @@ SUBROUTINE init_ts(gw_ini, sw_ini, auto_advance)
 	time% elapsed = time% current - time% Gstart
 	time% wall_elapsed = time% wall_start% now() - time% wall_start
 	time% Lstop = time% Lstart + time% Gdt
+	
 
 	CALL logger% log(logger% INFO, "Local simulation period starts at " // TRIM(time% Lstart% strftime("%Y-%m-%d %H:%M:%S")))
 
@@ -68,21 +69,20 @@ SUBROUTINE init_ts(gw_ini, sw_ini, auto_advance)
 	WRITE(strbuffer, *) "Initializing local simulation period with a timestep of ", time% Ldt% total_seconds(), " s."
 	CALL logger% log(logger% INFO, strbuffer)
 
-	ALLOCATE(GW% Lstorage(nelements, time% Lnts+1), UZ% Lstorage(nelements, time% Lnts+1), UZ% Lepv(nelements, time% Lnts+1), SW% Lstorage(nelements, time% Lnts+1))
-	ALLOCATE(GW% Ldischarge(nelements, time% Lnts+1), UZ% Ldischarge(nelements, time% Lnts+1), SW% Ldischarge(nelements, time% Lnts+1))
+	ALLOCATE(GW% Lstorage(nelements, time% Lnts+1), UZ% Lstorage(nelements, time% Lnts+1), UZ% Lepv(nelements, time% Lnts+1), SW% Lstorage(nelements, time% Lnts+1), &
+		GW% Ldischarge(nelements, time% Lnts+1), UZ% Ldischarge(nelements, time% Lnts+1), SW% Ldischarge(nelements, time% Lnts+1))
 
 	! $OMP PARALLEL DO
 	DO e = 1, nelements
 		DO l = 1, UZ_(e)% nlay
 			IF (UZ_(e)% SM(l)% isactive) THEN
-				ALLOCATE(UZ_(e)% SM(l)% Lstorage(time% Lnts+1))
-				ALLOCATE(UZ_(e)% SM(l)% Lepv(time% Lnts+1))
-				! ALLOCATE(UZ_(e)% SM(l)% Ldischarge(time% Lnts+1))
+				ALLOCATE(UZ_(e)% SM(l)% Lstorage(time% Lnts+1), UZ_(e)% SM(l)% Lepv(time% Lnts+1)) ! UZ_(e)% SM(l)% Ldischarge(time% Lnts+1)
 				UZ_(e)% SM(l)% Lstorage(1) = UZ_(e)% SM(l)% Gstorage(time% Gts-1)
 			END IF
 		END DO
 	END DO
 	! $OMP END PARALLEL DO
+	! TODO: deallocate Lstorages, Lepvs, and Ldischarges at the end of the time step
 
 	! set local storage to the global storage of last dt (or initial conditions for first dt)
 	GW% Lstorage(:, 1) = gw_ini

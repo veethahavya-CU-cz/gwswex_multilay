@@ -1,16 +1,15 @@
-import numpy as np
+# %%
 from ctypes import *
-import os, psutil, sys
+import ctypes
+import numpy as np
+from numpy.ctypeslib import ndpointer
+import os
 from scipy.io import FortranFile
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 # %%
-os.environ['OMP_NUM_THREADS'] = str(psutil.cpu_count(logical = False))
-
-sys.path.append(os.path.abspath('libs/'))
-from gwswex_wrapper import gwswex as GWSWEX
-
+GWSWEX = cdll.LoadLibrary('/home/gwswex_dev/gwswex_multilay/libs/gwswex_cdll_wrapper.so')
 
 Fyaml = create_string_buffer(b'/home/gwswex_dev/gwswex_multilay/gwswex.yml', 256)
 
@@ -30,7 +29,7 @@ class pvanGI:
 	alpha: np.float64 = 0.35
 	n: np.float64 = 1.25
 
-top = np.full(elems, 150, dtype=np.float64, order='F')
+top = np.full(elems, 150, dtype=c_double)
 bot = np.full((nlay, elems), 0, dtype=np.float64, order='F')
 bot[0] = top - 5
 bot[1] = top - 15
@@ -71,16 +70,15 @@ op_path = '/home/gwswex_dev/gwswex_multilay/runtime/output'
 
 fwrite('top.ip', top)
 fwrite('bot.ip', bot)
-
 fwrite('l1_active.ip', isactive[0])
 fwrite('l1_ks.ip', ks)
-fwrite('l1_por.ip', porosity)
+fwrite('l1_porosity.ip', porosity)
 fwrite('l2_active.ip', isactive[1])
 fwrite('l2_ks.ip', ks)
-fwrite('l2_por.ip', porosity)
+fwrite('l2_porosity.ip', porosity)
 fwrite('l3_active.ip', isactive[2])
 fwrite('l3_ks.ip', ks)
-fwrite('l3_por.ip', porosity)
+fwrite('l3_porosity.ip', porosity)
 
 fwrite('GW_chd.ip', chd)
 fwrite('GW_ini.ip', gw_ini)
@@ -90,4 +88,4 @@ fwrite('p.ip', p)
 fwrite('et.ip', et)
 
 #%%
-GWSWEX.wrap_init('/home/gwswex_dev/gwswex_multilay/gwswex.yml')
+GWSWEX.initialize(Fyaml)

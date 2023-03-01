@@ -16,14 +16,15 @@ while getopts ':pnh' opt; do
             gfortran -c GWSWEX.f90 \
                 -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
                 -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
-                -fopenmp -Wall -Wno-conversion -Wno-tabs -pedantic -O3 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
+                -fopenmp -Wall -Wno-conversion -Wno-conversion-extra -Wno-tabs -O3 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
                 >>../build.log 2>&1
+            # -pedantic
             if [ $? -eq 0 ]; then
                 echo $'========================================  Successfully compiled GWSWEX fortran module  ======================================== \n\n\n' >> ../build.log
                 echo '========================================  Compiling GWSWEX python wrapper  ========================================' >> ../build.log
                 export LDFLAGS=-Wl,-rpath=../libs/
                 export NPY_DISTUTILS_APPEND_FLAGS=1
-                (f2py --verbose -c -m gwswex_wrapper --build-dir f2py_scratch --fcompiler=gnu95 --f90flags='-fopenmp -march=znver2 -mtune=znver2' --opt='-O3' \
+                (f2py3 --verbose -c -m gwswex_wrapper --build-dir f2py_scratch --fcompiler=gnu95 --f90flags='-fopenmp -march=znver2 -mtune=znver2' --opt='-O3' \
                     -I. -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
                     -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
                     GWSWEX.o GWSWEX_wrapper.f90) >>../build.log 2>&1
@@ -53,14 +54,15 @@ while getopts ':pnh' opt; do
             gfortran -c GWSWEX.f90 \
                 -L/usr/local/lib/ -lfgsl -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
                 -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
-                -fopenmp -Wall -Wno-conversion -Wno-tabs -pedantic -O3 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
+                -Wall -Wno-conversion -Wno-conversion-extra -Wno-tabs -O3 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
                  >>../build.log 2>&1
+                 # -pedantic
             if [ $? -eq 0 ]; then
                 echo $'========================================  Successfully compiled GWSWEX fortran module  ======================================== \n\n\n' >> ../build.log
                 echo '========================================  Compiling GWSWEX python wrapper  ========================================' >> ../build.log
                 export LDFLAGS=-Wl,-rpath=../libs/
                 export NPY_DISTUTILS_APPEND_FLAGS=1
-                (f2py --verbose -c -m gwswex_wrapper --build-dir f2py_scratch --fcompiler=gnu95 --f90flags='-march=znver2 -mtune=znver2' --opt='-O3' \
+                (f2py3 --verbose -c -m gwswex_wrapper --build-dir f2py_scratch --fcompiler=gnu95 --f90flags='-march=znver2 -mtune=znver2' --opt='-O3' \
                     -I. -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
                     -L/usr/local/lib/ -lfgsl -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
                     GWSWEX.o GWSWEX_wrapper.f90) >>../build.log 2>&1
@@ -97,14 +99,15 @@ if (( $OPTIND == 1 )); then
     gfortran -c GWSWEX.f90 \
         -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
         -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
-        -fopenmp -Wall -Wno-conversion -Wno-tabs -pedantic -O3 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
+        -fopenmp -Wall -Wno-conversion -Wno-conversion-extra -Wno-tabs -O3 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
         >>../build.log 2>&1
+        # -pedantic
     if [ $? -eq 0 ]; then
         echo $'========================================  Successfully compiled GWSWEX fortran module  ======================================== \n\n\n' >> ../build.log
         echo '========================================  Compiling GWSWEX python wrapper  ========================================' >> ../build.log
         export LDFLAGS=-Wl,-rpath=../libs/
         export NPY_DISTUTILS_APPEND_FLAGS=1
-        (f2py --verbose -c -m gwswex_wrapper --build-dir f2py_scratch --fcompiler=gnu95 --f90flags='-fopenmp -march=znver2 -mtune=znver2' --opt='-O3' \
+        (f2py3 --verbose -c -m gwswex_wrapper --build-dir f2py_scratch --fcompiler=gnu95 --f90flags='-fopenmp -march=znver2 -mtune=znver2' --opt='-O3' \
             -I. -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
             -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
             GWSWEX.o GWSWEX_wrapper.f90) >>../build.log 2>&1

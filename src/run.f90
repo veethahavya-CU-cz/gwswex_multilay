@@ -76,18 +76,18 @@ SUBROUTINE run(gws_l, sws_l, sm_l, epv_l, gw_sm_interconnectivity_l)
 					CALL logger%log(logger%debug, "sm is", sm(e,t-1))
 					CALL logger%log(logger%debug, "epv is", epv(e,t-1))
 					CALL logger%log(logger%debug, "sm/epv", sm(e,t-1)/epv(e,t-1))
-					k_inf = kUS(min(sm(e,t-1)/epv(e,t-1), 1.0)*n(e), k(e)) !calc K from wetness at the begining of this dt i.e. END of last dt
+					k_inf = kUS(MIN(sm(e,t-1)/epv(e,t-1), 1.0)*n(e), k(e)) !calc K from wetness at the begining of this dt i.e. END of last dt
 					CALL logger%log(logger%debug, "got k", k_inf)
-					inf = min(k_inf*dt, p(e,t)*dt)
+					inf = MIN(k_inf*dt, p(e,t)*dt)
 					CALL logger%log(logger%debug, "inf aka p_sm is ", inf)
 					excess_p = p(e,t)*dt - inf
 					CALL logger%log(logger%debug, "excess p aka p_sw is ", excess_p)
 					CALL logger%log(logger%debug, "sws is", sws(e,t-1))
 					CALL logger%log(logger%debug, "ET is", et(e,t)*dt)
-					sw_et = min(sws(e,t-1)+excess_p, et(e,t)*dt)
+					sw_et = MIN(sws(e,t-1)+excess_p, et(e,t)*dt)
 					inf_deficit = k_inf*dt - inf
 					CALL logger%log(logger%debug, "inf_deficit", inf_deficit)
-					sw_inf = min(inf_deficit, sws(e,t-1)+excess_p-sw_et)
+					sw_inf = MIN(inf_deficit, sws(e,t-1)+excess_p-sw_et)
 					CALL logger%log(logger%debug, "sw_inf", sw_inf)
 					sws(e,t) = sws(e,t-1) - sw_inf + excess_p - sw_et
 					et_deficit = et(e,t)*dt - sw_et
@@ -104,13 +104,13 @@ SUBROUTINE run(gws_l, sws_l, sm_l, epv_l, gw_sm_interconnectivity_l)
 					CALL logger%log(logger%debug, "vanGI_fgsl called. sm_eq is ", sm_eq)
 					! consider capping gw_sm_interconnectivity to L
 					IF(inf /= 0) THEN
-						gw_sm_interconnectivity(e) = max((gw_sm_interconnectivity(e) + k_inf*dt), 0.0)
+						gw_sm_interconnectivity(e) = MAX((gw_sm_interconnectivity(e) + k_inf*dt), 0.0)
 					END IF
-					k_inf_gw = kUS(min(sm(e,t)/epv(e,t-1), 1.0)*n(e), k(e)) !calc K from current wetness (after P and SW inf)
-					interconnectivity_ratio = min(1.0, max(gw_sm_interconnectivity(e)/abs(L), vanG% theta_r+macropore_inf_degree(e)))
-					inf_gw = min((sm(e,t)-sm_eq)*interconnectivity_ratio, (k_inf_gw*dt)*interconnectivity_ratio, (sm(e,t)-sm_eq)) !IF sm<sm_eq, inf_gw is -ve ...
+					k_inf_gw = kUS(MIN(sm(e,t)/epv(e,t-1), 1.0)*n(e), k(e)) !calc K from current wetness (after P and SW inf)
+					interconnectivity_ratio = MIN(1.0, MAX(gw_sm_interconnectivity(e)/abs(L), vanG% theta_r+macropore_inf_degree(e)))
+					inf_gw = MIN((sm(e,t)-sm_eq)*interconnectivity_ratio, (k_inf_gw*dt)*interconnectivity_ratio, (sm(e,t)-sm_eq)) !IF sm<sm_eq, inf_gw is -ve ...
 					IF(gws(e,t-1) + inf_gw/n(e) < bot(e)) THEN
-						inf_gw = - min(abs((gws(e,t-1) - bot(e)))*n(e), abs(k_inf_gw*dt))
+						inf_gw = - MIN(abs((gws(e,t-1) - bot(e)))*n(e), abs(k_inf_gw*dt))
 					END IF
 					IF(inf_gw < 0) THEN
 						gw_sm_interconnectivity(e) = (gw_sm_interconnectivity(e) + inf_gw)
@@ -138,12 +138,12 @@ SUBROUTINE run(gws_l, sws_l, sm_l, epv_l, gw_sm_interconnectivity_l)
 					L = gok(e) - gws(e,t)
 					sm_eq = vanG% integrate(L, 0.0_8) !!!gw-sm balancing: consider adding a convergence criteria here
 					CALL logger%log(logger%debug, "new sm_eq", sm_eq)
-					k_inf_gw = kUS(min(sm(e,t)/epv(e,t), 1.0)*n(e), k(e))*dt - max(inf_gw, 0.00) !subtract k_inf_gw alREADy utilized and allow freely capilary rise beyond k_inf_gw
+					k_inf_gw = kUS(MIN(sm(e,t)/epv(e,t), 1.0)*n(e), k(e))*dt - MAX(inf_gw, 0.00) !subtract k_inf_gw alREADy utilized and allow freely capilary rise beyond k_inf_gw
 					CALL logger%log(logger%debug, "k_inf_gw remaining", k_inf_gw)
-					interconnectivity_ratio = min(1.0, max(gw_sm_interconnectivity(e)/abs(L), vanG% theta_r+macropore_inf_degree(e)))
-					inf_gw = min((sm(e,t)-sm_eq)*interconnectivity_ratio, (max(k_inf_gw*dt,0.0))*interconnectivity_ratio, (sm(e,t)-sm_eq))
+					interconnectivity_ratio = MIN(1.0, MAX(gw_sm_interconnectivity(e)/abs(L), vanG% theta_r+macropore_inf_degree(e)))
+					inf_gw = MIN((sm(e,t)-sm_eq)*interconnectivity_ratio, (MAX(k_inf_gw*dt,0.0))*interconnectivity_ratio, (sm(e,t)-sm_eq))
 					IF(gws(e,t) + inf_gw/n(e) < bot(e)) THEN
-						inf_gw = - min(abs((gws(e,t) - bot(e)))*n(e), k_inf_gw*dt)
+						inf_gw = - MIN(abs((gws(e,t) - bot(e)))*n(e), k_inf_gw*dt)
 						IF(sm(e,t)<0) THEN
 							sm(e,t) = 0
 						END IF

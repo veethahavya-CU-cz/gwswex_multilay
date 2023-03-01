@@ -12,7 +12,7 @@ SUBROUTINE init(self)
 	self% error = -2
 	self% fatal = -3
 
-    OPEN(UNIT=self% unit, FILE=self% fname, STATUS='REPLACE', ACTION='WRITE')
+    OPEN(UNIT=self% unit, FILE=self% fpath, STATUS='REPLACE', ACTION='WRITE')
 END SUBROUTINE init
 
 

@@ -62,7 +62,8 @@ END SUBROUTINE setvars
 
 FUNCTION kUS(s, ks)
 ! van Genuchten-Mualem model for unsaturated hydraulic conductivity - accepts a scalar saturation value and returns a scalar unsaturated hydraulic conductivity value
-		REAL(REAL128), INTENT(IN) :: s, ks
+		REAL(REAL128), INTENT(IN) :: s
+		REAL(REAL64), INTENT(IN) :: ks
 		REAL(REAL128) :: kUS, sat
 		REAL(REAL32), PARAMETER :: sat_relaxation = 1e-3
 
