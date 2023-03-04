@@ -96,7 +96,7 @@ MODULE Muz
 	IMPLICIT NONE
 
 	REAL(REAL64), POINTER :: alpha, n, m, theta_r, theta_s
-	TYPE(Clogger) :: logger
+	TYPE(Clogger), POINTER :: plogger_Muz
 	
 	TYPE CvanG
 	! to store, access, and calculate van Genuchten and -Mualem model parameters
@@ -252,7 +252,7 @@ MODULE model
 	IMPLICIT NONE
 
 	TYPE(Cpaths) :: paths
-	TYPE(Clogger) :: logger
+	TYPE(Clogger), POINTER :: logger
 
 	INTEGER(INT32)  :: nelements, e, l
 	TYPE(Ctime) :: time

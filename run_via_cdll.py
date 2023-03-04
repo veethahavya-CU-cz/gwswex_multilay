@@ -48,8 +48,8 @@ p[:,2100:Gnts] = 0*(1e-3/3600)
 et = np.full((elems,Gnts+1), 0.33*(1e-3/3600))
 
 isactive = np.full((nlay, elems), 1, dtype=int, order='F')
-gw_ini = np.array(bot[2] + 5, dtype=np.float64, order='F')
-sw_ini = np.array(np.random.default_rng().uniform(0, 1e-2, elems), dtype=np.float64, order='F')
+gw_ini = np.array(bot[2] + 5, dtype=c_double)
+sw_ini = np.array(np.random.default_rng().uniform(0, 1e-2, elems), dtype=c_double)
 
 #%%
 def fwrite(fname, val):
@@ -90,4 +90,5 @@ fwrite('et.ip', et)
 #%%
 GWSWEX.initialize(Fyaml)
 
-# GWSWEX.solve()
+GWSWEX.solve.argtypes = [np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"), np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS")]
+GWSWEX.solve(gw_ini, sw_ini)

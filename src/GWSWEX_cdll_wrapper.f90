@@ -36,20 +36,29 @@ MODULE GWSWEX
             ! WRITE(*,*) "Fyaml_path_c: ", Fyaml_path_c
 
             CALL build(TRIM(Fyaml_path))
-
             
         END SUBROUTINE wrap_init
 
 
-        SUBROUTINE wrap_run(gw_ini, sw_ini) BIND(C, name='solve')
-        USE model, ONLY: init_ts, solve_ts
+        SUBROUTINE wrap_run(gw_ini_c, sw_ini_c) BIND(C, name='solve')
+
+            USE model, ONLY: init_ts, solve_ts
+            USE iso_c_binding, only: c_double
+            USE iso_fortran_env, only: REAL64
+
             IMPLICIT NONE
+
             !custom type usage (!but not def) possible here
             !TYPE(Clogger), DIMENSION(7) :: logger_array
-            REAL(8), DIMENSION(:), INTENT(INOUT) :: gw_ini, sw_ini
+            REAL(c_double), DIMENSION(:), INTENT(INOUT) :: gw_ini_c, sw_ini_c
+            REAL(REAL64), DIMENSION(:), ALLOCATABLE :: gw_ini, sw_ini
+
+            ALLOCATE(gw_ini(SIZE(gw_ini_c)), sw_ini(SIZE(sw_ini_c)))
+            gw_ini = gw_ini_c
+            sw_ini = sw_ini_c
 
             CALL init_ts(gw_ini, sw_ini, auto_advance=.FALSE.)
-write(*,*) "!!! HERE !!!"
+
             CALL solve_ts()
         END SUBROUTINE wrap_run
 

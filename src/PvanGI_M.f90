@@ -32,7 +32,7 @@ FUNCTION kUS(s, ks)
 		! saturation relaxation introduced for numerical stability in cases where sat <= theta_r to avoid returning a kUS value of 0
 		IF(s < theta_r .OR. s == theta_r) THEN
 			sat = ((sat_relaxation)/(theta_s-theta_r))
-			CALL logger% log(logger% trace, "saturation relaxation applied")
+			CALL plogger_Muz% log(plogger_Muz% trace, "saturation relaxation applied")
 		ELSE
 			sat = ((s-theta_r)/(theta_s-theta_r))
 		END IF
@@ -41,7 +41,7 @@ FUNCTION kUS(s, ks)
 		! fix for cases where kUS is NaN, i.e. when s >= theta_s
 		IF(ISNAN(kUS)) THEN
 			kUS = ks
-			CALL logger% log(logger% trace, "kUS is NaN, setting kUS = ks")
+			CALL plogger_Muz% log(plogger_Muz% trace, "kUS is NaN, setting kUS = ks")
 		END IF
 END FUNCTION kUS
 
@@ -84,7 +84,7 @@ FUNCTION integrate(ub, lb)
 
 	status = fgsl_integration_qags(f_obj, ub, lb, 0.0_fgsl_double, 1.0e-7_fgsl_double, nmax, wk, result, error)
 	IF (status /= 0) THEN
-		CALL logger% log(logger% fatal, "ERROR: fgsl integration failed")
+		CALL plogger_Muz% log(plogger_Muz% fatal, "ERROR: fgsl integration failed")
 		ERROR STOP "ERROR: integration failed"
 	END IF
 	integrate = result

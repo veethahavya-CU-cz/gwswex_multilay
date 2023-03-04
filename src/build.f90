@@ -9,6 +9,7 @@ SUBROUTINE build(Fyaml_path)
 	USE YAMLInterface
 	USE YAMLRead
 	USE datetime_module, only: strptime, timedelta, datetime
+	USE Muz, only: plogger_Muz
 
 	IMPLICIT NONE
 
@@ -67,6 +68,8 @@ SUBROUTINE build(Fyaml_path)
 	! read and set the logger level and initialize the logger
     yp_util = yaml_start_from_map(fyaml, 'utils')
 	yc_util_logger = yp_util% value_map('logger')
+
+	ALLOCATE(logger)
 	logger% level = INT(yc_util_logger% value_int("level", ires), kind=INT8)
 	IF (ires /= 0) THEN
 		ERROR STOP "ERROR: logger level not found/incorrect in config file"
@@ -81,6 +84,7 @@ SUBROUTINE build(Fyaml_path)
 	logger% fpath = TRIM(ADJUSTL(paths% output))//"/"//TRIM(ADJUSTL(logger% fname))
 
 	CALL logger% init()
+	plogger_Muz => logger
 	CALL logger% log(logger% info, "Initializing model from config file")
 
 	CALL yc_util_logger% destroy()
@@ -369,5 +373,6 @@ SUBROUTINE build(Fyaml_path)
 	CALL yaml_close_file(fyaml)
 
 	CALL logger% log(logger%info, "Model built successfully")
+	FLUSH(logger% unit)
 
 END SUBROUTINE
