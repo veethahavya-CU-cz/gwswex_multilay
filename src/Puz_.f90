@@ -307,20 +307,6 @@ SUBROUTINE resolve(self, e, UZ, GW, time, solver_settings)
         CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "ePV = ", pSM_% Lepv)
     END IF
 
-    IF(.NOT. ALLOCATED(self% SM(1)% infiltration)) ALLOCATE(self% SM(1)% infiltration)
-
-    UZ% Lstorage(e,t) = 0.0
-    UZ% Lepv(e,t) = 0.0
-    DO smn = 1, self% gws_bnd_smid
-        IF (self% SM(smn)% isactive) THEN
-            UZ% Lstorage(e,t) = UZ% Lstorage(e,t) + self% SM(smn)% Lstorage(t)
-            UZ% Lepv(e,t) = UZ% Lepv(e,t) + self% SM(smn)% Lepv
-        END IF
-    END DO
-
-    CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "UZ Lstorage = ", UZ% Lstorage(e,t))
-    CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "UZ Lepv = ", UZ% Lepv(e,t))
-
 ! set the bounds of UZ and calculate its thickness if UZ is active for element e
     IF (.NOT. self% SM(1)% isactive) THEN
         self% isactive = .FALSE.
@@ -328,6 +314,20 @@ SUBROUTINE resolve(self, e, UZ, GW, time, solver_settings)
     ELSE
         self% isactive = .TRUE.
         CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "UZ is still active")
+        
+        IF(.NOT. ALLOCATED(self% SM(1)% infiltration)) ALLOCATE(self% SM(1)% infiltration)
+
+        UZ% Lstorage(e,t) = 0.0
+        UZ% Lepv(e,t) = 0.0
+        DO smn = 1, self% gws_bnd_smid
+            IF (self% SM(smn)% isactive) THEN
+                UZ% Lstorage(e,t) = UZ% Lstorage(e,t) + self% SM(smn)% Lstorage(t)
+                UZ% Lepv(e,t) = UZ% Lepv(e,t) + self% SM(smn)% Lepv
+            END IF
+        END DO
+
+        CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "UZ Lstorage = ", UZ% Lstorage(e,t))
+        CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "UZ Lepv = ", UZ% Lepv(e,t))
     END IF
     self% Albound => GW% Lstorage(e,t)
 
