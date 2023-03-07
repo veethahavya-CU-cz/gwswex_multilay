@@ -9,11 +9,13 @@ SUBROUTINE solve(e, first_run, lateral_GW_flux, lateral_SW_flux)
     REAL(REAL64), POINTER :: porosity_gwbnd, porosity_gwbnd_above, porosity_gwbnd_below
     REAL(REAL128) :: ET, P
     REAL(REAL32) :: dt
-    INTEGER(INT32), POINTER :: t
+    INTEGER(INT32) :: t
     TYPE(Csm), POINTER :: pSM_
 
-    REAL(REAL128) :: infiltration_deficit, et_sw, excess_precipitation, infiltration_sw, et_deficit, prev_gw_storage
-    INTEGER(INT16) :: itr
+    REAL(REAL128) :: infiltration_deficit, et_sw, excess_precipitation, infiltration_sw, et_deficit, prev_gw_storage, theta
+    INTEGER :: itr !(INT16)
+
+    CHARACTER(LEN=STRLEN) :: strbuffer
 
     IF(first_run) THEN
         ET = EXTF% et(e, time% Gts) * time% Ldt% total_seconds()
@@ -23,52 +25,82 @@ SUBROUTINE solve(e, first_run, lateral_GW_flux, lateral_SW_flux)
         P = 0.0
     END IF
 
+    CALL logger% log(logger% DEBUG, "ET, P = ", ET, P)
+
     dt = time% Ldt% total_seconds()
-    t => time% Lts
-write(*,*) "!!! HERE !!!"
-    porosity_gwbnd_above => UZ_(e)% SM(UZ_(e)% gws_bnd_smid-1)% porosity
+    time% current = time% Lstart
+
+    IF(UZ_(e)% SM(UZ_(e)% gws_bnd_smid-1)% isactive) porosity_gwbnd_above => UZ_(e)% SM(UZ_(e)% gws_bnd_smid-1)% porosity
     porosity_gwbnd => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)% porosity
-    porosity_gwbnd_below => UZ_(e)% SM(UZ_(e)% gws_bnd_smid+1)% porosity
-write(*,*) "!!! HERE !!!"
-    DO t = 2, time% Lnts
+    IF(UZ_(e)% SM(UZ_(e)% gws_bnd_smid+1)% isactive) porosity_gwbnd_below => UZ_(e)% SM(UZ_(e)% gws_bnd_smid+1)% porosity
+
+    CALL UZ_(e)% resolve(e, UZ, GW, time, solver_settings)
+! write(*,*) "UZ resolved"
+    DO t = 2, time% Lnts + 1
         time% Lts = t
+        time% current = time% current + time% Ldt
+
+        CALL logger% log(logger% TRACE, "*** in solve_main ***")
+        CALL logger% log(logger% TRACE, "Solving: e,t = ", e, t-1)
 
         IF (.NOT. GW% chd(e)) THEN
         !### free GW boundary case
-            CALL UZ_(e)% resolve(e, UZ, GW, time, solver_settings)
 
             IF (UZ_(e)% isactive) THEN
             !## case 1: UZ is active
-                pSM_ => UZ_(e)% SM(1)
+                CALL logger% log(logger% TRACE, "UZ is active")
 
-                pSM_% kUS_inf = pSM_% vanG% kUS(MIN((pSM_% Lstorage(t-1) / pSM_% Lepv(t-1)* pSM_% porosity), pSM_% porosity), pSM_% ks)
+                pSM_ => UZ_(e)% SM(1)
+! write(*,*) "here"
+                CALL logger% log(logger% DEBUG, "SM_gwbnd, ePV = ", pSM_% Lstorage(t-1), pSM_% Lepv)
+                theta = (pSM_% Lstorage(t-1) / pSM_% Lepv)* pSM_% porosity
+                pSM_% kUS_inf = pSM_% vanG% kUS(theta, pSM_% ks)
+                CALL logger% log(logger% DEBUG, "theta, kUS_inf = ", theta, pSM_% kUS_inf)
 
                 pSM_% infiltration = MIN(P, pSM_% kUS_inf * dt)
+                CALL logger% log(logger% DEBUG, "p, infiltration = ", P, pSM_% infiltration)
+
                 excess_precipitation = P - pSM_% infiltration
                 infiltration_deficit = (pSM_% kUS_inf * dt) - pSM_% infiltration
-
-                IF(pSM_% infiltration /= 0.0) pSM_% IC = MAX(pSM_% IC + pSM_% kUS_inf * dt, 0.0)
-                pSM_% IC_ratio = MIN(1.0, MAX(pSM_% IC / ABS(pSM_% RWubound - pSM_% RWubound), pSM_% vanG% theta_r))
+                CALL logger% log(logger% DEBUG, "excess_precipitation, infiltration_deficit = ", excess_precipitation, infiltration_deficit)
 
                 et_sw = MIN(SW% Lstorage(e,t-1) + excess_precipitation, ET)
                 infiltration_sw = MIN(SW% Lstorage(e,t-1) + excess_precipitation - et_sw, infiltration_deficit)
+                CALL logger% log(logger% DEBUG, "et_sw, infiltration_sw = ", et_sw, infiltration_sw)
 
                 SW% Lstorage(e,t) = SW% Lstorage(e,t-1) + excess_precipitation - et_sw - infiltration_sw
 
+                CALL logger% log(logger% DEBUG, "SW was = ", SW% Lstorage(e,t-1))
+                CALL logger% log(logger% DEBUG, "SW is = ", SW% Lstorage(e,t))
+
                 et_deficit = ET - et_sw
-                IF(GW% Lstorage(e,t-1) + (et_deficit / porosity_gwbnd) < UZ% bot(UZ% nlay, e) .OR. GW% Lstorage(e,t-1) == UZ% bot(UZ% nlay, e)) &
+                IF(((GW% Lstorage(e,t-1) + (et_deficit / porosity_gwbnd)) < UZ% bot(UZ% nlay, e)) .OR. (GW% Lstorage(e,t-1) == UZ% bot(UZ% nlay, e))) &
                     et_deficit = (GW% Lstorage(e,t-1) - UZ% bot(UZ% nlay, e)) * porosity_gwbnd ! no ET extraction from GW if GW is below UZ bottom
+                CALL logger% log(logger% DEBUG, "et_deficit = ", et_deficit)
 
                 pSM_% Lstorage(t) = pSM_% Lstorage(t-1) + pSM_% infiltration + infiltration_sw - et_deficit
-                IF(pSM_% Lstorage(t) > pSM_% Lepv(t)) THEN
-                    SW% Lstorage(e,t) = SW% Lstorage(e,t) + (pSM_% Lstorage(t) - pSM_% Lepv(t))
-                    pSM_% Lstorage(t) = pSM_% Lepv(t)
+                IF(pSM_% Lstorage(t) > pSM_% Lepv) THEN
+                    IF(.NOT. UZ_(e)% gws_bnd_smid == 1) THEN
+                        SW% Lstorage(e,t) = SW% Lstorage(e,t) + (pSM_% Lstorage(t) - pSM_% Lepv)
+                        pSM_% Lstorage(t) = pSM_% Lepv
+                    ELSE
+                        GW% Lstorage(e,t) = GW% Lstorage(e,t) + (pSM_% Lstorage(t) - pSM_% Lepv) / porosity_gwbnd
+                        pSM_% Lstorage(t) = pSM_% Lepv
+                    END IF
                 END IF
+                CALL logger% log(logger% DEBUG, "SM_gwbnd, SW = ", pSM_% Lstorage(t), SW% Lstorage(e,t))
 
                 CALL UZ_(e)% solve(e, UZ, time, first_run=.TRUE.)
 
+                CALL logger% log(logger% DEBUG, "SM_gwbnd, ePV = ", pSM_% Lstorage(t), pSM_% Lepv)
+
                 pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
                 GW% Lstorage(e,t) = GW% Lstorage(e,t-1) + (pSM_% exfiltration / pSM_% porosity)
+
+                CALL logger% log(logger% DEBUG, "SM_exf_gwbnd = ", pSM_% exfiltration)
+                CALL logger% log(logger% DEBUG, "GW_inf = ", (pSM_% exfiltration / pSM_% porosity))
+                CALL logger% log(logger% DEBUG, "GW was ", GW% Lstorage(e,t-1))
+                CALL logger% log(logger% DEBUG, "GW is ", GW% Lstorage(e,t))
 
                 CALL UZ_(e)% resolve(e, UZ, GW, time, solver_settings)
                 IF(.NOT. UZ_(e)% isactive) CALL solve(e, first_run=.FALSE.)
@@ -82,24 +114,29 @@ write(*,*) "!!! HERE !!!"
                     CALL UZ_(e)% resolve(e, UZ, GW, time, solver_settings)
                 END DO
 
+                CALL logger% log(logger% DEBUG, "balanced SM-GW storage with ", itr, " iterations")
+                CALL logger% log(logger% DEBUG, "GW, UZ = ", GW% Lstorage(e,t), UZ% Lstorage(e,t))
+
             ! calculate discharges
-                pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
-                IF(GW% Lstorage(e,t-1) < pSM_% ADubound .AND. GW% Lstorage(e,t) > pSM_% ADubound) THEN
-                    GW% Ldischarge(e,t) = (GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) * porosity_gwbnd
-                ELSE IF(GW% Lstorage(e,t-1) > pSM_% ADubound) THEN
-                ! GW fell a layer
-                    GW% Ldischarge(e,t) = (pSM_% ADubound - GW% Lstorage(e,t-1)) * porosity_gwbnd_above + &
-                        (GW% Lstorage(e,t) - pSM_% ADubound) * porosity_gwbnd
-                ELSE
-                ! GW rose a layer
-                    GW% Ldischarge(e,t) = pSM_% ADlbound - GW% Lstorage(e,t-1) * porosity_gwbnd_below + &
-                        (GW% Lstorage(e,t) - pSM_% ADlbound) * porosity_gwbnd
-                END IF
-                SW% Ldischarge(e,t) = SW% Lstorage(e,t) - SW% Lstorage(e,t-1)
-                UZ% Ldischarge(e,t) = UZ% Lstorage(e,t) - UZ% Lstorage(e,t-1)
+                ! pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
+
+                ! IF(GW% Lstorage(e,t-1) < pSM_% ADubound .AND. GW% Lstorage(e,t) > pSM_% ADubound) THEN
+                !     GW% Ldischarge(e,t) = (GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) * porosity_gwbnd
+                ! ELSE IF(GW% Lstorage(e,t-1) > pSM_% ADubound) THEN
+                ! ! GW fell a layer
+                !     GW% Ldischarge(e,t) = (pSM_% ADubound - GW% Lstorage(e,t-1)) * porosity_gwbnd_above + &
+                !         (GW% Lstorage(e,t) - pSM_% ADubound) * porosity_gwbnd
+                ! ELSE IF(GW% Lstorage(e,t-1) < pSM_% ADlbound) THEN
+                ! ! GW rose a layer
+                !     GW% Ldischarge(e,t) = pSM_% ADlbound - GW% Lstorage(e,t-1) * porosity_gwbnd_below + &
+                !         (GW% Lstorage(e,t) - pSM_% ADlbound) * porosity_gwbnd
+                ! END IF
+                ! SW% Ldischarge(e,t) = SW% Lstorage(e,t) - SW% Lstorage(e,t-1)
+                ! UZ% Ldischarge(e,t) = UZ% Lstorage(e,t) - UZ% Lstorage(e,t-1)
 
             ELSE
             !## case 2: UZ is inactive
+write(*,*) "no UZ"
                 ! transfer excess GW storage and p to SW storage, set GW and UZ_Albound to GSL, and set UZ thickness to 0
                 IF(GW% Lstorage(e,t) > UZ% top(e)) THEN
                     SW% Lstorage(e,t) = SW% Lstorage(e,t-1) + (GW% Lstorage(e,t) - UZ% top(e)) * porosity_gwbnd + P
@@ -146,14 +183,25 @@ write(*,*) "!!! HERE !!!"
         END IF
 
         ! fluxes are negative when mass leaves the element in GWSWEX; i.e. fluxes are negative when the storage in GWSWEX is greater than external storage
-        IF(PRESENT(lateral_GW_flux)) GW% Lstorage(e,t) = GW% Lstorage(e,t) + lateral_GW_flux(time% Lts)
-        IF(PRESENT(lateral_SW_flux)) SW% Lstorage(e,t) = SW% Lstorage(e,t) + lateral_SW_flux(time% Lts)
+        IF(PRESENT(lateral_GW_flux)) GW% Lstorage(e,t) = GW% Lstorage(e,t) + lateral_GW_flux(t)
+        IF(PRESENT(lateral_SW_flux)) SW% Lstorage(e,t) = SW% Lstorage(e,t) + lateral_SW_flux(t)
 
     END DO
 
     GW% Gstorage(e, time% Gts) = GW% Lstorage(e, time% Lnts)
     SW% Gstorage(e, time% Gts) = SW% Lstorage(e, time% Lnts)
     UZ% Gstorage(e, time% Gts) = UZ% Lstorage(e, time% Lnts)
+    UZ% Gepv(e, time% Gts) = UZ% Lepv(e, time% Lnts)
+    
+    DO l = 1, UZ_(e)% nlay
+        IF (UZ_(e)% SM(l)% isactive) THEN
+            pSM_ => UZ_(e)% SM(l)
+
+            pSM_% Gstorage(time% Gts) = pSM_% Lstorage(time% Lnts)
+        END IF
+    END DO
+
+    CALL logger% log(logger% TRACE, "*** leaving solve_main ***")
 
 END SUBROUTINE solve
 
@@ -171,9 +219,7 @@ SUBROUTINE solve_ts()
     ! PRIVATE types: https://stackoverflow.com/a/15309556/19053317 || https://www.openmp.org/wp-content/uploads/OMP-Users-Monthly-Telecon-20211210.pdf ||
     ! https://fortran-lang.discourse.group/t/newbie-question-use-openmp-with-derived-type/4651/10#:~:text=I%20actually%20don%E2%80%99t,all%20the%20components.
 
-    ! $OMP PARALLEL DO PRIVATE(e, t, l, time% scratch_dt, time% scratch_td) LASTPRIVATE(time% Lts) SHARED(GW, SW, UZ, UZ_, EXTF, solver_settings, nelements, paths, logger, &
-    !   $OMP & time% Gstart, time% Gstop, time% Gts, time% Gdt, time% Gnts, time% Lstart, time% Lstop, time% Ldt, time% Lnts, time% current, time% wall_start, &
-    !   $OMP & time% wall_elapsed, time% elapsed)
+    ! $OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e, t, l, time% Lts)
     DO e = 1, nelements
 
         CALL solve(e, first_run=.TRUE.)

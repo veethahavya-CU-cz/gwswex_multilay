@@ -1,10 +1,12 @@
 MODULE GWSWEX
 	USE model , ONLY: build, init_ts, solve_ts, resolve_ts
     USE iso_c_binding
+
+	IMPLICIT NONE
     
     ! TODO: WHILE(time% Gts < time% Gnts) run GWSWEX
 
-	IMPLICIT NONE
+    INTEGER, PARAMETER  :: STRLEN=256
 
     CONTAINS
 
@@ -15,9 +17,9 @@ MODULE GWSWEX
 
             IMPLICIT NONE
 
-            CHARACTER(LEN=1, KIND=c_char), INTENT(IN), TARGET :: Fyaml_path_c(256)
-            CHARACTER, DIMENSION(256) :: Fyaml_path_f
-            CHARACTER(256), POINTER :: Fyaml_path
+            CHARACTER(LEN=1, KIND=c_char), INTENT(IN), TARGET :: Fyaml_path_c(STRLEN)
+            CHARACTER, DIMENSION(STRLEN) :: Fyaml_path_f
+            CHARACTER(LEN=STRLEN), POINTER :: Fyaml_path
 
             INTEGER :: i
 
@@ -26,14 +28,9 @@ MODULE GWSWEX
             Fyaml_path_f = Fyaml_path_c
             ! WRITE(Fyaml_path, *) Fyaml_path_f
 
-            DO i = 1, 256
+            DO i = 1, STRLEN
                 Fyaml_path(i:i) = Fyaml_path_f(i)
             END DO
-
-            ! write(*,*) "Fyaml_path: ", Fyaml_path
-            ! WRITE(*,*) "Fyaml_path: ", TRIM(Fyaml_path)
-            ! WRITE(*,*) "Fyaml_path_f: ", Fyaml_path_f
-            ! WRITE(*,*) "Fyaml_path_c: ", Fyaml_path_c
 
             CALL build(TRIM(Fyaml_path))
             
@@ -57,7 +54,7 @@ MODULE GWSWEX
             gw_ini = gw_ini_c
             sw_ini = sw_ini_c
 
-            CALL init_ts(gw_ini, sw_ini, auto_advance=.FALSE.)
+            CALL init_ts(gw_ini=gw_ini, sw_ini=sw_ini, auto_advance=.FALSE.)
 
             CALL solve_ts()
         END SUBROUTINE wrap_run

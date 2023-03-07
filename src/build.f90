@@ -6,23 +6,25 @@
 
 
 SUBROUTINE build(Fyaml_path)
-	USE YAMLInterface
+	USE YAMLInterface, DISABLED => STRLEN
 	USE YAMLRead
 	USE datetime_module, only: strptime, timedelta, datetime
 	USE Muz, only: plogger_Muz
+	USE Mstorages, only: plogger_Mstorages
 
 	IMPLICIT NONE
 
-	CHARACTER(256), INTENT(IN) :: Fyaml_path
+	! INTEGER, PARAMETER  :: STRLEN=256
+
+	CHARACTER(LEN=*), INTENT(IN) :: Fyaml_path
 
 	TYPE(YAMLHandler) :: fyaml
 	TYPE(YAMLMap) :: yp_model, yp_paths, yp_util
-	TYPE(YAMLMap) :: yc_model_domain, yc_path_dirs, yc_path_files, yc_util_logger, yc_model_domain_lays_vanG, yc_model_ic, &
-					 yc_model_bnd, yc_model_extf, yc_model_solver
+	TYPE(YAMLMap) :: yc_model_domain, yc_path_dirs, yc_path_files, yc_util_logger, yc_model_ic, yc_model_bnd, yc_model_extf, yc_model_solver
 	TYPE(YAMLMap), DIMENSION(:), ALLOCATABLE :: yc_model_domain_lays
 	INTEGER :: ires, Gdt_copy
 
-	CHARACTER(256) :: strbuffer, strbuffer2, fpath
+	CHARACTER(LEN=STRLEN) :: strbuffer, strbuffer2, fpath
 	REAL(REAL64), DIMENSION(4) :: vanG_pars
 	REAL(REAL64), DIMENSION(:), ALLOCATABLE :: r64temp1d
 	REAL(REAL64), DIMENSION(:,:), ALLOCATABLE :: r64temp2d
@@ -85,7 +87,8 @@ SUBROUTINE build(Fyaml_path)
 
 	CALL logger% init()
 	plogger_Muz => logger
-	CALL logger% log(logger% info, "Initializing model from config file")
+	plogger_Mstorages => logger
+	CALL logger% log(logger% INFO, "Initializing model from config file")
 
 	CALL yc_util_logger% destroy()
 	CALL yp_util% destroy()
@@ -101,7 +104,7 @@ SUBROUTINE build(Fyaml_path)
 		CALL logger% log(logger% fatal, "nelements not defined in config file")
 	END IF
 	WRITE(strbuffer, *) "Initializing model with ", nelements, " elements"
-	CALL logger% log(logger% moreinfo, TRIM(ADJUSTL(strbuffer)))
+	CALL logger% log(logger% MOREINFO, TRIM(ADJUSTL(strbuffer)))
 
 	! allocate the UZ_
 	ALLOCATE(UZ_(nelements))
@@ -112,7 +115,7 @@ SUBROUTINE build(Fyaml_path)
 		CALL logger% log(logger%fatal, "dt not defined in config file")
 	END IF
 	WRITE(strbuffer, *) "Initializing model with a global time step of", time% Gdt% total_seconds(), " s."
-	CALL logger% log(logger% moreinfo, TRIM(ADJUSTL(strbuffer)))
+	CALL logger% log(logger% MOREINFO, TRIM(ADJUSTL(strbuffer)))
 
 	WRITE(strbuffer, *) yc_model_domain% value_str("tstart", ires)
 	IF (ires /= 0) THEN
@@ -121,7 +124,7 @@ SUBROUTINE build(Fyaml_path)
 	END IF
 	time% Gstart = strptime(strbuffer, "%Y%m%d %H%M%S")
 	WRITE(strbuffer, *) "Simulation start time: ", time% Gstart% isoformat()
-	CALL logger% log(logger% moreinfo, TRIM(ADJUSTL(strbuffer)))
+	CALL logger% log(logger% MOREINFO, TRIM(ADJUSTL(strbuffer)))
 
 	WRITE(strbuffer, *) yc_model_domain% value_str("tstop", ires)
 	IF (ires /= 0) THEN
@@ -130,7 +133,7 @@ SUBROUTINE build(Fyaml_path)
 	END IF
 	time% Gstop = strptime(strbuffer, "%Y%m%d %H%M%S")
 	WRITE(strbuffer, *) "Simulation stop time: ", time% Gstop% isoformat()
-	CALL logger% log(logger% moreinfo, TRIM(ADJUSTL(strbuffer)))
+	CALL logger% log(logger% MOREINFO, TRIM(ADJUSTL(strbuffer)))
 
 	time% scratch_td = time% Gstop - time% Gstart
 	time% Gnts = INT(time% scratch_td% total_seconds()/time% Gdt% total_seconds(), kind=INT32)
@@ -147,19 +150,18 @@ SUBROUTINE build(Fyaml_path)
 	END IF
 
 	WRITE(strbuffer, *) "Model will run for ", time% Gnts, " time steps"
-	CALL logger% log(logger% moreinfo, TRIM(ADJUSTL(strbuffer)))
+	CALL logger% log(logger% MOREINFO, TRIM(ADJUSTL(strbuffer)))
 
 	time% current = time% Gstart
 	time% elapsed = timedelta(seconds = 0)
-	time% Gts = 1
+	time% Gts = 2
 
 	time% Lstart = time% Gstart
 	time% Lstop = time% Gstart + time% Gdt
 	ALLOCATE(time% Lts)
-	time% Lts = 1
 
 	! allocating global storages
-	CALL logger% log(logger% debug, "Allocating global UZ, GW and SW storages")
+	CALL logger% log(logger% DEBUG, "Allocating global UZ, GW and SW storages")
 	ALLOCATE(GW% Gstorage(nelements, time% Gnts+1), UZ% Gstorage(nelements, time% Gnts+1), UZ% Gepv(nelements, time% Gnts+1), SW% Gstorage(nelements, time% Gnts+1))
 
 	UZ% nlay = yc_model_domain% value_int("nlay", ires)
@@ -168,9 +170,9 @@ SUBROUTINE build(Fyaml_path)
 		CALL logger% log(logger%fatal, "nlay not defined in config file")
 	END IF
 	WRITE(strbuffer, *) "Initializing model with ", UZ% nlay, " layers"
-	CALL logger% log(logger% moreinfo, TRIM(ADJUSTL(strbuffer)))
+	CALL logger% log(logger% MOREINFO, TRIM(ADJUSTL(strbuffer)))
 	WRITE(strbuffer, *) "Model initialized with ", UZ% nlay, " layers"
-	CALL logger% log(logger% moreinfo, TRIM(ADJUSTL(strbuffer)))
+	CALL logger% log(logger% MOREINFO, TRIM(ADJUSTL(strbuffer)))
 
 	! allocate the UZ layers, top, and bottom
 	ALLOCATE(UZ% layer(UZ% nlay), UZ% top(nelements), UZ% bot(UZ% nlay, nelements))
@@ -196,7 +198,7 @@ SUBROUTINE build(Fyaml_path)
 		CLOSE (UNIT=tu)
 	END IF
 
-	CALL logger% log(logger% moreinfo, "Layer elevations read")
+	CALL logger% log(logger% MOREINFO, "Layer elevations read")
 
 	ALLOCATE(yc_model_domain_lays(UZ% nlay))
 
@@ -270,10 +272,10 @@ SUBROUTINE build(Fyaml_path)
 		CALL yc_model_domain_lays(l)% destroy()
 
 		WRITE(strbuffer, *) "Layer properties read for layer", l
-		CALL logger% log(logger% debug, TRIM(ADJUSTL(strbuffer)))
+		CALL logger% log(logger% TRACE, TRIM(ADJUSTL(strbuffer)))
 	END DO
 
-	CALL logger% log(logger% moreinfo, "Layer properties read")
+	CALL logger% log(logger% MOREINFO, "Layer properties read")
 
 
 	CALL yc_model_domain% destroy()
@@ -324,25 +326,25 @@ SUBROUTINE build(Fyaml_path)
 
 	! read external forcings
 	yc_model_extf = yp_model% value_map("external forcings")
-	ALLOCATE(EXTF% p(nelements, time% Gnts), EXTF% et(nelements, time% Gnts))
+	ALLOCATE(EXTF% p(nelements, time% Gnts+1), EXTF% et(nelements, time% Gnts+1))
 
 	IF (yc_path_files% value_int("EXTF.p", ires) == 0) THEN
-		EXTF% p = yc_model_extf% value_double_2d("p", ires)
+		EXTF% p(:,2:time% Gnts+1) = yc_model_extf% value_double_2d("p", ires)
 	ELSE
 		WRITE(strbuffer, *) yc_model_extf% value_str("p", ires)
 		fpath = TRIM(ADJUSTL(paths% input))//"/"//ADJUSTL(TRIM(strbuffer))
 		OPEN(UNIT=tu, FILE=TRIM(fpath), FORM='UNFORMATTED', ACTION='READ')
-		READ(tu) EXTF% p
+		READ(tu) EXTF% p(:,2:time% Gnts+1)
 		CLOSE (UNIT=tu)
 	END IF
 
 	IF (yc_path_files% value_int("EXTF.et", ires) == 0) THEN
-		EXTF% et = yc_model_extf% value_double_2d("et", ires)
+		EXTF% et(:,2:time% Gnts+1) = yc_model_extf% value_double_2d("et", ires)
 	ELSE
 		WRITE(strbuffer, *) yc_model_extf% value_str("et", ires)
 		fpath = TRIM(ADJUSTL(paths% input))//"/"//ADJUSTL(TRIM(strbuffer))
 		OPEN(UNIT=tu, FILE=TRIM(fpath), FORM='UNFORMATTED', ACTION='READ')
-		READ(tu) EXTF% et
+		READ(tu) EXTF% et(:,2:time% Gnts+1)
 		CLOSE (UNIT=tu)
 	END IF
 	CALL yc_model_extf% destroy()
@@ -372,7 +374,7 @@ SUBROUTINE build(Fyaml_path)
 
 	CALL yaml_close_file(fyaml)
 
-	CALL logger% log(logger%info, "Model built successfully")
+	CALL logger% log(logger%INFO, "Model built successfully")
 	FLUSH(logger% unit)
 
 END SUBROUTINE

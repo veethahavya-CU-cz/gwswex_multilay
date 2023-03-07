@@ -6,58 +6,70 @@ MODULE GWSWEX
 
 	IMPLICIT NONE
 
+    INTEGER, PARAMETER :: STRLEN = 256
+
     CONTAINS
-        SUBROUTINE wrap_init(Fyaml_path_f) !BIND(C, name='initialize')
-            USE model, ONLY: build
-            ! USE iso_c_binding, only: c_char
+        SUBROUTINE init(config_path)
 
             IMPLICIT NONE
 
-            ! character(LEN=1, KIND=c_char), intent(in), TARGET :: Fyaml_path_c(256)
-            CHARACTER(256), INTENT(IN) :: Fyaml_path_f
-            ! CHARACTER(256), POINTER :: Fyaml_path
+            CHARACTER(LEN=*), INTENT(IN) :: config_path
+            CHARACTER(LEN=STRLEN) :: Fyaml_path
 
-            INTEGER :: i
-
-            ! Fyaml_path => Fyaml_path_c(1)
-            ! ALLOCATE(Fyaml_path)
-            ! Fyaml_path_f = Fyaml_path_c
-            ! WRITE(Fyaml_path, *) Fyaml_path_f
-
-            ! DO i = 1, 256
-            !     Fyaml_path(i:i) = Fyaml_path_f(i)
-            ! END DO
-
-            ! write(*,*) "Fyaml_path: ", Fyaml_path
-            ! WRITE(*,*) "Fyaml_path: ", TRIM(Fyaml_path)
-            ! WRITE(*,*) "Fyaml_path_f: ", Fyaml_path_f
-            ! WRITE(*,*) "Fyaml_path_c: ", Fyaml_path_c
-            write(*,*) "Fyaml_path_f: ", TRIM(Fyaml_path_f)
-
-            CALL build(TRIM(Fyaml_path_f))
-        END SUBROUTINE wrap_init
+            Fyaml_path = TRIM(ADJUSTL(config_path))
 
 
-        SUBROUTINE wrap_run(gw_ini, sw_ini) !BIND(C, name='solve')
-        USE model, ONLY: init_ts, solve_ts
+            CALL build(TRIM(Fyaml_path))
+
+        END SUBROUTINE init
+
+
+
+        SUBROUTINE run(gw_ini, sw_ini)
+        USE model, ONLY: init_ts, solve_ts, time
+
             IMPLICIT NONE
-            !custom type usage (!but not def) possible here
-            !TYPE(Clogger), DIMENSION(7) :: logger_array
+
             REAL(8), DIMENSION(:), INTENT(INOUT) :: gw_ini, sw_ini
 
-            CALL init_ts(gw_ini, sw_ini)
+            CALL init_ts(gw_ini=gw_ini, sw_ini=sw_ini, auto_advance=.FALSE., first_run=.TRUE.)
+
             CALL solve_ts()
-        END SUBROUTINE wrap_run
+
+            ! DO WHILE(time% Gts < 12)
+            !     CALL init_ts(auto_advance=.TRUE.)
+            !     CALL solve_ts()
+            ! END DO
+
+            DO WHILE(time% Gts < time% Gnts) ! TODO: .OR. time% Gts == time% Gnts
+                CALL init_ts(auto_advance=.TRUE.)
+                CALL solve_ts()
+            END DO
+
+        END SUBROUTINE run
 
 
-        SUBROUTINE wrap_resolve(GWS_ext, SWS_ext) !BIND(C, name='resolve')
+        SUBROUTINE resolve(GWS_ext, SWS_ext) !BIND(C, name='resolve')
             USE model, ONLY: resolve_ts
+
             IMPLICIT NONE
-            !custom type usage (!but not def) possible here
-            !TYPE(Clogger), DIMENSION(7) :: logger_array
+
             REAL(8), DIMENSION(:,:), INTENT(INOUT) :: GWS_ext, SWS_ext
 
             CALL resolve_ts(GWS_ext, SWS_ext)
-        END SUBROUTINE wrap_resolve
+        END SUBROUTINE resolve
+
+        SUBROUTINE pass_vars(gws, sws, sms, epv) !BIND(C, name='pass_vars')
+            USE model, ONLY: GW, SW, UZ
+
+            IMPLICIT NONE
+
+            REAL(8), DIMENSION(:,:), INTENT(INOUT) :: gws, sws, sms, epv
+
+            gws = GW% Gstorage
+            sws = SW% Gstorage
+            sms = UZ% Gstorage
+            epv = UZ% Gepv
+        END SUBROUTINE pass_vars
 
 END MODULE GWSWEX

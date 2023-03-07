@@ -47,8 +47,10 @@ MODULE Mpaths
 
 	IMPLICIT NONE
 
+	INTEGER, PARAMETER  :: STRLEN=256
+
 	TYPE Cpaths
-		CHARACTER(256) :: root, input, output, config
+		CHARACTER(LEN=STRLEN) :: root, input, output, config
 	END TYPE Cpaths
 
 END MODULE Mpaths
@@ -64,17 +66,24 @@ MODULE Mlogger
 
 	IMPLICIT NONE
 
+	INTEGER, PARAMETER  :: STRLEN=256
+
 	TYPE Clogger
 	! to store and access logging information of the model
 		INTEGER(INT8) :: unit, level, info, moreinfo, trace, debug, warn, error, fatal
-		CHARACTER(LEN=256) :: fpath, fname
+		CHARACTER(LEN=STRLEN) :: fpath, fname
 		TYPE(datetime) :: timer
 		CONTAINS
 			PROCEDURE :: init
-			PROCEDURE :: log_real
+			PROCEDURE :: log_real32
+			PROCEDURE :: log_real64
+			PROCEDURE :: log_real128
 			PROCEDURE :: log_int
+			PROCEDURE :: log_int8
+			PROCEDURE :: log_int_middle
+			PROCEDURE :: log_int8_middle
 			PROCEDURE :: log_str
-			GENERIC :: log => log_real, log_int, log_str
+			GENERIC :: log => log_real32, log_real64, log_real128, log_int, log_int8, log_int_middle, log_int8_middle, log_str
 	END TYPE Clogger
 
 	CONTAINS
@@ -106,7 +115,7 @@ MODULE Muz
 			PROCEDURE, PASS :: init
 			PROCEDURE, PASS :: setvars
 			PROCEDURE, NOPASS :: integrate
-			PROCEDURE, NOPASS :: kUS
+			PROCEDURE, PASS :: kUS
 	END TYPE CvanG
 
 	TYPE Clayer
@@ -147,8 +156,12 @@ MODULE Mstorages
 	USE iso_fortran_env, ONLY: REAL32, REAL64, REAL128, INT8, INT16, INT32, INT64
 	USE Muz, ONLY: CvanG, Clayer
 	USE Msolver, ONLY: Csettings
+	USE Mlogger, ONLY: Clogger
 
 	IMPLICIT NONE
+
+	TYPE(Clogger), POINTER :: plogger_Mstorages
+	INTEGER, PARAMETER  :: STRLEN=256
 
 
 	TYPE Cstorage
@@ -201,7 +214,8 @@ MODULE Mstorages
 		INTEGER(INT8), ALLOCATABLE :: lid
 		TYPE(CvanG), POINTER :: vanG
 		REAL(REAL64), POINTER :: ks, porosity
-		REAL(REAL128), DIMENSION(:), ALLOCATABLE :: Gstorage, Lstorage, Lepv
+		REAL(REAL128), DIMENSION(:), ALLOCATABLE :: Gstorage, Lstorage
+		REAL(REAL128), ALLOCATABLE :: Lepv
 		REAL(REAL64), ALLOCATABLE :: RWubound, RWlbound
 		REAL(REAL64), POINTER :: ADubound, ADlbound
 		REAL(REAL128), ALLOCATABLE :: EQstorage, infiltration, exfiltration, kUS_inf, kUS_exf
@@ -267,7 +281,7 @@ MODULE model
 
 	TYPE(Csettings) :: solver_settings
 	
-	INTEGER, PARAMETER  :: lu=42, tu=99
+	INTEGER, PARAMETER  :: lu=42, tu=99, STRLEN=256
 
 	CONTAINS
 		INCLUDE 'build.f90'

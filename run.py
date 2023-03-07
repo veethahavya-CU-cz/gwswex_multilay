@@ -1,9 +1,11 @@
+#%%
 import numpy as np
 from ctypes import *
 import os, psutil, sys
 from scipy.io import FortranFile
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+import matplotlib.pyplot as plt
 
 # %%
 os.environ['OMP_NUM_THREADS'] = str(psutil.cpu_count(logical = False))
@@ -14,7 +16,79 @@ from gwswex_wrapper import gwswex as GWSWEX
 
 Fyaml = create_string_buffer(b'/home/gwswex_dev/gwswex_multilay/gwswex.yml', 256)
 
-#%%
+# %%
+def plot(elem, plotWlev=True, plotPrec=True, plotDis=True, plotBal=True, savefig=True, dDPI=90, pDPI=1600, alpha_scatter=0.7, scatter_size=3, format='jpg'):
+	#formats = jpg, svg, png, jpg
+	fig_path = os.path.join(op_path, 'figs/')
+	if not os.path.exists(fig_path):
+		os.makedirs(fig_path)
+	pal = ['#E74C3C', '#2ECC71', '#5EFCA1', '#E7AC3C', '#2980B9', '#1A3BFF', '#FF6600'] #[gw, sms, epv, sv, sw, p, et]
+
+	def disPlot(elem):
+		plt.figure(dpi=dDPI)
+		plt.xlabel("Time Steps")
+		plt.ylabel("Discharges in Storage")
+		plt.scatter(range(0,Gnts), gw_dis[elem,:], label="GW_dis", color=pal[0],\
+		alpha=alpha_scatter, s=scatter_size)
+		plt.scatter(range(0,Gnts), sm_dis[elem,:], label="SM_dis", color=pal[1],\
+		alpha=alpha_scatter, s=scatter_size)
+		plt.scatter(range(0,Gnts), sw_dis[elem,:], label="SW_dis", color=pal[4],\
+		alpha=alpha_scatter, s=scatter_size)
+		plt.legend(loc='best', fontsize='small')
+		plt.tight_layout()
+		plt.xticks(range(0,Gnts,24*30))
+
+	def wlevPlot(elem,gws,sws,sms):
+		plt.figure(dpi=dDPI)
+		plt.xlabel("Time Steps (h)")
+		plt.ylabel("Water Levels (m.a.s.l.)")
+		plt.ylim([bot[-1,elem]-0.5, sws[elem,:].max()+0.5+top[elem]])
+		plt.stackplot(range(0,Gnts), gws[elem,:-1], sms[elem,:-1],\
+		epv[elem,:-1]-sms[elem,:-1], (np.full(Gnts,top[elem])-gws[elem,:-1])*(1-porosity[elem]),\
+		sws[elem,:-1], labels=["Groundwater","Soil Moisture", "Effective Pore Volume", "Soil Volume", "Surface Water"], colors=pal)
+		if plotPrec:
+			p_dom, et_dom = [], []
+			ht = (sws[elem,:].max()+0.5+top[elem]) + (bot[-1,elem]-0.5)
+			for ts in range(Gnts):
+				if p[elem,ts] > et[elem,ts]:
+					p_dom.append(ht)
+					et_dom.append(0)
+				else:
+					et_dom.append(ht)
+					p_dom.append(0)
+			plt.stackplot(range(0,Gnts), p_dom, labels=["Precipitation Dominant", ], colors=['#A8EAED'], alpha=0.21)
+			plt.stackplot(range(0,Gnts), et_dom, labels=["Evapotranspiration Dominant", ], colors=['#E8A78B'], alpha=0.21)
+		plt.plot(range(0,Gnts+1), np.full(Gnts+1,top[elem]), color='#502D16', linewidth=0.5, label="Ground Level")
+		plt.plot(range(0,Gnts+1), np.full(Gnts+1,bot[-1,elem]), color='black', linewidth=0.5, label="Bottom")
+		plt.legend(loc='lower right', fontsize=3)
+		plt.tight_layout()
+		plt.xticks(range(0,Gnts,24*30))
+
+	def balPlot():
+		plt.figure(dpi=dDPI)
+		ind = np.random.choice(Qdiff.shape[0], 1, replace=False)[0]
+		plt.xlabel("Time Steps")
+		plt.ylabel("Mass Balance Error (Total = {:.2g})".format(Qdiff[ind].sum()))
+		plt.plot(Qdiff[ind], "r")
+		plt.tight_layout()
+		plt.xticks(range(0,Gnts,24*30))
+
+	if plotDis:
+		disPlot(0)
+		if savefig:
+			plt.savefig(os.path.join(fig_path,"discharges."+format), format=format, dpi=pDPI)
+
+	if plotWlev:
+		wlevPlot(0,gws,sws,sms)
+		if savefig:
+			plt.savefig(os.path.join(fig_path,"water_levels."+format), format=format, dpi=pDPI)
+
+	if plotBal:
+		balPlot()
+		if savefig:
+			plt.savefig(os.path.join(fig_path,"mBal."+format), format=format, dpi=pDPI)
+
+# %%
 elems = int(1)
 nlay = 3
 
@@ -44,7 +118,7 @@ p[:,0:500] = 3.5*(1e-3/3600)
 p[:,500:750] = 0*(1e-3/3600)
 p[:,1000:1250] = 0*(1e-3/3600)
 p[:,1000:1250] = 0*(1e-3/3600)
-p[:,1750:2000] = 0*(1e-3/3600)
+# p[:,1750:2000] = 0*(1e-3/3600)
 p[:,2100:Gnts] = 0*(1e-3/3600)
 et = np.full((elems,Gnts+1), 0.33*(1e-3/3600))
 
@@ -90,4 +164,15 @@ fwrite('p.ip', p)
 fwrite('et.ip', et)
 
 #%%
-GWSWEX.wrap_init('/home/gwswex_dev/gwswex_multilay/gwswex.yml')
+GWSWEX.init('/home/gwswex_dev/gwswex_multilay/gwswex.yml')
+
+GWSWEX.run(gw_ini, sw_ini)
+
+gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+sws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+sms = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+epv = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+GWSWEX.pass_vars(gws, sws, sms, epv)
+
+plot(0, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
+# %%

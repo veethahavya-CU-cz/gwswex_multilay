@@ -40,8 +40,33 @@ FUNCTION lv_name(lv)
 END FUNCTION lv_name
 
 
-SUBROUTINE log_real(self, lv, msg, val, addnl_val)
+SUBROUTINE log_real32(self, lv, msg, val, addnl_val)
 ! logs a real value
+    USE iso_fortran_env, ONLY: REAL32
+
+    CLASS(Clogger), INTENT(INOUT) :: self
+    INTEGER(INT8), INTENT(IN) :: lv
+    CHARACTER(len=*), INTENT(IN) :: msg
+    CHARACTER(len=32) :: buffer
+    REAL(REAL32), INTENT(IN) :: val
+    REAL(REAL32), OPTIONAL :: addnl_val
+
+
+    IF (lv < self% level .OR. lv == self% level) THEN
+        self% timer = self% timer% now()
+        buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(ADJUSTL(self% timer% strftime("%H:%M:%S")))//"]"
+        IF (PRESENT(addnl_val)) THEN
+            WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val, addnl_val
+        ELSE
+            WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val
+        ENDIF
+    END IF
+END SUBROUTINE log_real32
+
+SUBROUTINE log_real64(self, lv, msg, val, addnl_val)
+! logs a real value
+    USE iso_fortran_env, ONLY: REAL64
+
     CLASS(Clogger), INTENT(INOUT) :: self
     INTEGER(INT8), INTENT(IN) :: lv
     CHARACTER(len=*), INTENT(IN) :: msg
@@ -49,17 +74,40 @@ SUBROUTINE log_real(self, lv, msg, val, addnl_val)
     REAL(REAL64), INTENT(IN) :: val
     REAL(REAL64), OPTIONAL :: addnl_val
 
-    self% timer = self% timer% now()
-    buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(ADJUSTL(self% timer% strftime("%H:%M:%S")))//"]"
 
     IF (lv < self% level .OR. lv == self% level) THEN
+        self% timer = self% timer% now()
+        buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(ADJUSTL(self% timer% strftime("%H:%M:%S")))//"]"
         IF (PRESENT(addnl_val)) THEN
             WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val, addnl_val
         ELSE
             WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val
         ENDIF
     END IF
-END SUBROUTINE log_real
+END SUBROUTINE log_real64
+
+SUBROUTINE log_real128(self, lv, msg, val, addnl_val)
+! logs a real value
+    USE iso_fortran_env, ONLY: REAL128
+
+    CLASS(Clogger), INTENT(INOUT) :: self
+    INTEGER(INT8), INTENT(IN) :: lv
+    CHARACTER(len=*), INTENT(IN) :: msg
+    CHARACTER(len=32) :: buffer
+    REAL(REAL128), INTENT(IN) :: val
+    REAL(REAL128), OPTIONAL :: addnl_val
+
+
+    IF (lv < self% level .OR. lv == self% level) THEN
+        self% timer = self% timer% now()
+        buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(ADJUSTL(self% timer% strftime("%H:%M:%S")))//"]"
+        IF (PRESENT(addnl_val)) THEN
+            WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val, addnl_val
+        ELSE
+            WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val
+        ENDIF
+    END IF
+END SUBROUTINE log_real128
 
 
 SUBROUTINE log_int(self, lv, msg, val, addnl_val)
@@ -71,10 +119,10 @@ SUBROUTINE log_int(self, lv, msg, val, addnl_val)
     INTEGER, INTENT(IN) :: val
     INTEGER, OPTIONAL :: addnl_val
 
-    self% timer = self% timer% now()
-    buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(ADJUSTL(self% timer% strftime("%H:%M:%S")))//"]"
 
     IF (lv < self% level .OR. lv == self% level) THEN
+        self% timer = self% timer% now()
+        buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(ADJUSTL(self% timer% strftime("%H:%M:%S")))//"]"
         IF (PRESENT(addnl_val)) THEN
             WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val, addnl_val
         ELSE
@@ -84,6 +132,66 @@ SUBROUTINE log_int(self, lv, msg, val, addnl_val)
 END SUBROUTINE log_int
 
 
+SUBROUTINE log_int8(self, lv, msg, val, addnl_val)
+! logs an integer value
+    USE iso_fortran_env, ONLY: INT8
+
+    CLASS(Clogger), INTENT(INOUT) :: self
+    INTEGER(INT8), INTENT(IN) :: lv
+    CHARACTER(len=*), INTENT(IN) :: msg
+    CHARACTER(len=32) :: buffer
+    INTEGER(INT8), INTENT(IN) :: val
+    INTEGER(INT8), OPTIONAL :: addnl_val
+
+
+    IF (lv < self% level .OR. lv == self% level) THEN
+        self% timer = self% timer% now()
+        buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(ADJUSTL(self% timer% strftime("%H:%M:%S")))//"]"
+        IF (PRESENT(addnl_val)) THEN
+            WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val, addnl_val
+        ELSE
+            WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val
+        ENDIF
+    END IF
+END SUBROUTINE log_int8
+
+
+SUBROUTINE log_int_middle(self, lv, msg1, val, msg2)
+! logs an integer value
+    CLASS(Clogger), INTENT(INOUT) :: self
+    INTEGER(INT8), INTENT(IN) :: lv
+    CHARACTER(len=*), INTENT(IN) :: msg1, msg2
+    CHARACTER(len=32) :: buffer
+    INTEGER, INTENT(IN) :: val
+
+
+    IF (lv < self% level .OR. lv == self% level) THEN
+        self% timer = self% timer% now()
+        buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(ADJUSTL(self% timer% strftime("%H:%M:%S")))//"]"
+        WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg1, val, msg2
+    END IF
+END SUBROUTINE log_int_middle
+
+
+SUBROUTINE log_int8_middle(self, lv, msg1, val, msg2)
+! logs an integer value
+    USE iso_fortran_env, ONLY: INT8
+
+    CLASS(Clogger), INTENT(INOUT) :: self
+    INTEGER(INT8), INTENT(IN) :: lv
+    CHARACTER(len=*), INTENT(IN) :: msg1, msg2
+    CHARACTER(len=32) :: buffer
+    INTEGER(INT8), INTENT(IN) :: val
+
+
+    IF (lv < self% level .OR. lv == self% level) THEN
+        self% timer = self% timer% now()
+        buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(ADJUSTL(self% timer% strftime("%H:%M:%S")))//"]"
+        WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg1, val, msg2
+    END IF
+END SUBROUTINE log_int8_middle
+
+
 SUBROUTINE log_str(self, lv, msg)
 ! logs a string
     CLASS(Clogger), INTENT(INOUT) :: self
@@ -91,10 +199,10 @@ SUBROUTINE log_str(self, lv, msg)
     CHARACTER(len=*), INTENT(IN) :: msg
     CHARACTER(len=32) :: buffer
 
-    self% timer = self% timer% now()
-    buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(ADJUSTL(self% timer% strftime("%H:%M:%S")))//"]"
 
     IF (lv < self% level .OR. lv == self% level) THEN
+        self% timer = self% timer% now()
+        buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(ADJUSTL(self% timer% strftime("%H:%M:%S")))//"]"
         WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg
     END IF
 END SUBROUTINE log_str

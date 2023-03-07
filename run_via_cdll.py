@@ -48,7 +48,7 @@ p[:,2100:Gnts] = 0*(1e-3/3600)
 et = np.full((elems,Gnts+1), 0.33*(1e-3/3600))
 
 isactive = np.full((nlay, elems), 1, dtype=int, order='F')
-gw_ini = np.array(bot[2] + 5, dtype=c_double)
+gw_ini = np.array(bot[2] + 5.0001, dtype=c_double)
 sw_ini = np.array(np.random.default_rng().uniform(0, 1e-2, elems), dtype=c_double)
 
 #%%

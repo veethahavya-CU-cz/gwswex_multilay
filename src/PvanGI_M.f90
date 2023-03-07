@@ -22,27 +22,40 @@ SUBROUTINE setvars(self)
 END SUBROUTINE setvars
 
 
-FUNCTION kUS(s, ks)
+FUNCTION kUS(self, s, ks)
 ! van Genuchten-Mualem model for unsaturated hydraulic conductivity - accepts a scalar saturation value and returns a scalar unsaturated hydraulic conductivity value
+		CLASS(CvanG) :: self
+
 		REAL(REAL128), INTENT(IN) :: s
 		REAL(REAL64), INTENT(IN) :: ks
 		REAL(REAL128) :: kUS, sat
 		REAL(REAL32), PARAMETER :: sat_relaxation = 1e-3
 
+		CALL self% setvars()
+
+		! CALL plogger_Muz% log(plogger_Muz% TRACE, "*** in kUS ***")
+		! CALL plogger_Muz% log(plogger_Muz% DEBUG, "set vanG vars")
+
 		! saturation relaxation introduced for numerical stability in cases where sat <= theta_r to avoid returning a kUS value of 0
 		IF(s < theta_r .OR. s == theta_r) THEN
 			sat = ((sat_relaxation)/(theta_s-theta_r))
-			CALL plogger_Muz% log(plogger_Muz% trace, "saturation relaxation applied")
+			! CALL plogger_Muz% log(plogger_Muz% DEBUG, "saturation relaxation applied")
 		ELSE
-			sat = ((s-theta_r)/(theta_s-theta_r))
+			sat = ((MIN(s, theta_s)-theta_r)/(theta_s-theta_r))
 		END IF
-		kUS = ks*sat*((1-(1-(sat)**(1/m))**m)**2)
+		kUS = ks * sat * ((1-(1-(sat)**(1/m))**m)**2)
 
 		! fix for cases where kUS is NaN, i.e. when s >= theta_s
 		IF(ISNAN(kUS)) THEN
 			kUS = ks
-			CALL plogger_Muz% log(plogger_Muz% trace, "kUS is NaN, setting kUS = ks")
+			! CALL plogger_Muz% log(plogger_Muz% DEBUG, "kUS is NaN, setting kUS = ks")
 		END IF
+
+		! CALL plogger_Muz% log(plogger_Muz% DEBUG, "s = ", MIN(s, theta_s))
+		! CALL plogger_Muz% log(plogger_Muz% DEBUG, "ks = ", ks)
+		! CALL plogger_Muz% log(plogger_Muz% DEBUG, "kUS = ", kUS)
+		! CALL plogger_Muz% log(plogger_Muz% TRACE, "*** leaving kUS ***")
+
 END FUNCTION kUS
 
 
