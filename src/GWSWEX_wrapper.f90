@@ -41,7 +41,7 @@ MODULE GWSWEX
             !     CALL solve_ts()
             ! END DO
 
-            DO WHILE(time% Gts < time% Gnts) ! TODO: .OR. time% Gts == time% Gnts
+            DO WHILE(time% Gts < time% Gnts .OR. time% Gts == time% Gnts) ! TODO: .OR. time% Gts == time% Gnts
                 CALL init_ts(auto_advance=.TRUE.)
                 CALL solve_ts()
             END DO

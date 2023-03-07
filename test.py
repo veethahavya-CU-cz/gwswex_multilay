@@ -13,11 +13,8 @@ os.environ['OMP_NUM_THREADS'] = str(psutil.cpu_count(logical = False))
 sys.path.append(os.path.abspath('libs/'))
 from gwswex_wrapper import gwswex as GWSWEX
 
-
-Fyaml = create_string_buffer(b'/home/gwswex_dev/gwswex_multilay/gwswex.yml', 256)
-
 # %%
-def plot(elem, nts_ll, nts_ul, plotWlev=True, plotPrec=True, plotDis=True, plotBal=True, savefig=True, dDPI=90, pDPI=1600, alpha_scatter=0.7, scatter_size=3, format='jpg'):
+def plot(elem, nts_ll, nts_ul, tick_res=24, plotWlev=True, plotPrec=True, plotDis=True, plotBal=True, savefig=True, dDPI=90, pDPI=1600, alpha_scatter=0.7, scatter_size=3, format='jpg'):
 	#formats = jpg, svg, png, jpg
 	fig_path = os.path.join(op_path, 'figs/')
 	if not os.path.exists(fig_path):
@@ -36,7 +33,7 @@ def plot(elem, nts_ll, nts_ul, plotWlev=True, plotPrec=True, plotDis=True, plotB
 		alpha=alpha_scatter, s=scatter_size)
 		plt.legend(loc='best', fontsize='small')
 		plt.tight_layout()
-		plt.xticks(range(nts_ll,nts_ul,24*30))
+		plt.xticks(range(nts_ll,nts_ul,tick_res))
 
 	def wlevPlot(elem,gws,sws,sms):
 		plt.figure(dpi=dDPI)
@@ -92,10 +89,10 @@ def plot(elem, nts_ll, nts_ul, plotWlev=True, plotPrec=True, plotDis=True, plotB
 elems = int(1)
 nlay = 3
 
-Gnts = int(24*30*6) #one every hour for 6 months
 Gdt = 3600
 tstart = datetime(2020, 1, 1, 0, 0, 0)
-tstop = tstart + timedelta(seconds=Gnts*Gdt)
+tstop = datetime(2020, 1, 6, 0, 0, 0)
+Gnts = int((tstop-tstart).total_seconds()/Gdt)
 
 @dataclass
 class pvanGI:
@@ -106,24 +103,20 @@ class pvanGI:
 
 top = np.full(elems, 150, dtype=np.float64, order='F')
 bot = np.full((nlay, elems), 0, dtype=np.float64, order='F')
-bot[0] = top - 5
-bot[1] = top - 15
+bot[0] = top - 1
+bot[1] = top - 3
 bot[2] = top - 30
 
 porosity = np.full(elems, pvanGI.theta_s, dtype=np.float64, order='F')
-ks = np.full(elems, 9000e-5, dtype=np.float64, order='F')
+ks = np.full(elems, 1000e-5, dtype=np.float64, order='F')
 chd = np.full(elems, 0, dtype=int, order='F')
-p = np.full((elems,Gnts+1), 2.5*(1e-3/3600)) #mm/h
-p[:,0:500] = 3.5*(1e-3/3600)
-p[:,500:750] = 0*(1e-3/3600)
-p[:,1000:1250] = 0*(1e-3/3600)
-p[:,1000:1250] = 0*(1e-3/3600)
-# p[:,1750:2000] = 0*(1e-3/3600)
-p[:,2100:Gnts] = 0*(1e-3/3600)
-et = np.full((elems,Gnts+1), 0.33*(1e-3/3600))
+p = np.full((elems,Gnts+1), 100*(1e-3/3600)) #mm/h
+p[0,int(Gnts/2):Gnts+1] = 1*(1e-3/3600)
+
+et = np.full((elems,Gnts+1), 3.33*(1e-3/3600))
 
 isactive = np.full((nlay, elems), 1, dtype=int, order='F')
-gw_ini = np.array(bot[2] + 5, dtype=np.float64, order='F')
+gw_ini = np.array(bot[2] + 20, dtype=np.float64, order='F')
 sw_ini = np.array(np.random.default_rng().uniform(0, 1e-2, elems), dtype=np.float64, order='F')
 
 #%%
@@ -164,7 +157,7 @@ fwrite('p.ip', p)
 fwrite('et.ip', et)
 
 #%%
-GWSWEX.init('/home/gwswex_dev/gwswex_multilay/gwswex.yml')
+GWSWEX.init('/home/gwswex_dev/gwswex_multilay/test.yml')
 
 GWSWEX.run(gw_ini, sw_ini)
 

@@ -24,7 +24,6 @@ SUBROUTINE init_ts(auto_advance, gw_ini, sw_ini, first_run)
 			DO l = 1, UZ_(e)% nlay
 				IF (UZ_(e)% SM(l)% isactive) THEN
 					DEALLOCATE(UZ_(e)% SM(l)% Lstorage)
-					DEALLOCATE(UZ_(e)% SM(l)% Lepv)
 					! DEALLOCATE(UZ_(e)% SM(l)% Ldischarge)
 				END IF
 			END DO
@@ -80,13 +79,15 @@ SUBROUTINE init_ts(auto_advance, gw_ini, sw_ini, first_run)
 
 		! $OMP PARALLEL DO
 		DO e = 1, nelements
-			DO l = 1, UZ_(e)% nlay
+			DO l = 1, UZ_(e)% gws_bnd_smid
 				IF (UZ_(e)% SM(l)% isactive) THEN
 					pSM_ => UZ_(e)% SM(l)
 					
-					ALLOCATE(pSM_% Lstorage(time% Lnts+1), pSM_% Lepv) ! UZ_(e)% SM(l)% Ldischarge(time% Lnts+1)
+					ALLOCATE(pSM_% Lstorage(time% Lnts+1)) ! UZ_(e)% SM(l)% Ldischarge(time% Lnts+1)
 
 					pSM_% Lstorage(1) = pSM_% Gstorage(time% Gts-1)
+
+					! TODO: check redundancy
 					pSM_% Lepv = ABS(pSM_% RWubound - pSM_% RWlbound) * pSM_% porosity
 
 					CALL logger% log(logger% DEBUG, "Rbounds: ", pSM_% RWubound, pSM_% RWlbound)

@@ -220,6 +220,10 @@ MODULE Mstorages
 		REAL(REAL64), POINTER :: ADubound, ADlbound
 		REAL(REAL128), ALLOCATABLE :: EQstorage, infiltration, exfiltration, kUS_inf, kUS_exf
 		REAL(REAL128), ALLOCATABLE :: IC, IC_ratio
+
+		CONTAINS
+			PROCEDURE, PASS :: activate
+			PROCEDURE, PASS :: deactivate
 	END TYPE Csm
 
 	TYPE Cuz_
@@ -228,7 +232,7 @@ MODULE Mstorages
 		! Aubound, Albound (abs. upper and lower bounds): 	[m]		[nlay]								{relative to the defined datum}
 		!? TODO: add option to specify whether the layers are physical or virtual to enable single vanGenuchten parameter set for all layers
 		TYPE(Csm), DIMENSION(:), POINTER :: SM ! 				[nlay]
-		INTEGER(INT8) :: nlay, gws_bnd_lid, gws_bnd_smid
+		INTEGER(INT8) :: nlay, gws_bnd_smid
 		REAL(REAL64), POINTER :: Aubound
 		REAL(REAL128), POINTER :: Albound
 		LOGICAL :: isactive
