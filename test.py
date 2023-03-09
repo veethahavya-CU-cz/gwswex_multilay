@@ -91,7 +91,7 @@ nlay = 3
 
 Gdt = 3600
 tstart = datetime(2020, 1, 1, 0, 0, 0)
-tstop = datetime(2020, 1, 6, 0, 0, 0)
+tstop = datetime(2020, 1, 2, 0, 0, 0)
 Gnts = int((tstop-tstart).total_seconds()/Gdt)
 
 @dataclass
@@ -105,18 +105,18 @@ top = np.full(elems, 150, dtype=np.float64, order='F')
 bot = np.full((nlay, elems), 0, dtype=np.float64, order='F')
 bot[0] = top - 1
 bot[1] = top - 3
-bot[2] = top - 30
+bot[2] = top - 10
 
 porosity = np.full(elems, pvanGI.theta_s, dtype=np.float64, order='F')
-ks = np.full(elems, 1000e-5, dtype=np.float64, order='F')
+ks = np.full(elems, 5000e-5, dtype=np.float64, order='F')
 chd = np.full(elems, 0, dtype=int, order='F')
-p = np.full((elems,Gnts+1), 100*(1e-3/3600)) #mm/h
+p = np.full((elems,Gnts+1), 333*(1e-3/3600)) #mm/h
 p[0,int(Gnts/2):Gnts+1] = 1*(1e-3/3600)
 
 et = np.full((elems,Gnts+1), 3.33*(1e-3/3600))
 
 isactive = np.full((nlay, elems), 1, dtype=int, order='F')
-gw_ini = np.array(bot[2] + 20, dtype=np.float64, order='F')
+gw_ini = np.array(bot[2] + 3, dtype=np.float64, order='F')
 sw_ini = np.array(np.random.default_rng().uniform(0, 1e-2, elems), dtype=np.float64, order='F')
 
 #%%

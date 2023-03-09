@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "GWSWEX debugger",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/bin/GWSWEX_debugger",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}",
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "build_debug"
+        }
+    ]
+}

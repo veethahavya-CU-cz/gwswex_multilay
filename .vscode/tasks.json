@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build_plain",
+            "type": "shell",
+            "command": "./build.sh -n",
+            "options": {
+                "cwd": "${workspaceRoot}"
+            }
+        },
+        {
+            "label": "build_omp",
+            "type": "shell",
+            "command": "./build.sh -p",
+            "options": {
+                "cwd": "${workspaceRoot}"
+            }
+        },
+        {
+            "label": "build_debug",
+            "type": "shell",
+            "command": "./build.sh -d",
+            "options": {
+                "cwd": "${workspaceRoot}"
+            }
+        }
+    ]
+}

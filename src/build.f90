@@ -362,7 +362,7 @@ SUBROUTINE build(Fyaml_path)
 
 	! TODO: read [gw_tolerance, sw_tolerance, sm_gw_fluctuation_tolerance]
 	! TODO: add option under utils to set the number of OMP threads and precision for input files, vars, and output files
-	solver_settings% max_iterations = 1
+	solver_settings% max_iterations = 10
 	solver_settings% sm_gw_fluctuation_tolerance = 1.0E-9
 
 	CALL yc_path_files% destroy()

@@ -221,9 +221,9 @@ MODULE Mstorages
 		REAL(REAL128), ALLOCATABLE :: EQstorage, infiltration, exfiltration, kUS_inf, kUS_exf
 		REAL(REAL128), ALLOCATABLE :: IC, IC_ratio
 
-		CONTAINS
-			PROCEDURE, PASS :: activate
-			PROCEDURE, PASS :: deactivate
+		! CONTAINS
+		! 	PROCEDURE, PASS :: activate
+		! 	PROCEDURE, PASS :: deactivate
 	END TYPE Csm
 
 	TYPE Cuz_

@@ -1,8 +1,6 @@
-MODULE GWSWEX
-	USE model , ONLY: build, init_ts, solve_ts, resolve_ts
+MODULE wrapper
+    USE model , ONLY: build, init_ts, solve_ts, resolve_ts
     USE iso_c_binding
-    
-    ! TODO: WHILE(time% Gts < time% Gnts) run GWSWEX
 
 	IMPLICIT NONE
 
@@ -30,7 +28,7 @@ MODULE GWSWEX
 
             IMPLICIT NONE
 
-            REAL(8), DIMENSION(:), INTENT(INOUT) :: gw_ini, sw_ini
+            REAL(8), DIMENSION(:), INTENT(INOUT), OPTIONAL :: gw_ini, sw_ini
 
             CALL init_ts(gw_ini=gw_ini, sw_ini=sw_ini, auto_advance=.FALSE., first_run=.TRUE.)
 
@@ -49,7 +47,7 @@ MODULE GWSWEX
         END SUBROUTINE run
 
 
-        SUBROUTINE resolve(GWS_ext, SWS_ext) !BIND(C, name='resolve')
+        SUBROUTINE resolve(GWS_ext, SWS_ext)
             USE model, ONLY: resolve_ts
 
             IMPLICIT NONE
@@ -59,7 +57,7 @@ MODULE GWSWEX
             CALL resolve_ts(GWS_ext, SWS_ext)
         END SUBROUTINE resolve
 
-        SUBROUTINE pass_vars(gws, sws, sms, epv) !BIND(C, name='pass_vars')
+        SUBROUTINE pass_vars(gws, sws, sms, epv)
             USE model, ONLY: GW, SW, UZ
 
             IMPLICIT NONE
@@ -72,4 +70,20 @@ MODULE GWSWEX
             epv = UZ% Gepv
         END SUBROUTINE pass_vars
 
-END MODULE GWSWEX
+END MODULE wrapper
+
+
+
+
+
+PROGRAM GWSWEX
+	USE wrapper, ONLY: init, run
+    USE iso_c_binding
+
+	IMPLICIT NONE
+
+    CALL init('/home/gwswex_dev/gwswex_multilay/test.yml')
+
+    CALL run()
+
+END PROGRAM GWSWEX
