@@ -23,7 +23,26 @@
             "command": "./build.sh -d",
             "options": {
                 "cwd": "${workspaceRoot}"
-            }
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "build-run_omp-main",
+            "type": "shell",
+            "command": "./build.sh -p && /bin/python /home/gwswex_dev/gwswex_multilay/run.py ",
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "build-run_omp-test",
+            "type": "shell",
+            "command": "./build.sh -p && /bin/python /home/gwswex_dev/gwswex_multilay/test.py",
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            "problemMatcher": []
         }
     ]
 }

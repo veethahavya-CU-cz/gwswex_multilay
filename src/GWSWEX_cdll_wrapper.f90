@@ -4,7 +4,7 @@ MODULE GWSWEX
 
 	IMPLICIT NONE
     
-    ! TODO: WHILE(time% Gts < time% Gnts) run GWSWEX
+    ! #TODO: WHILE(time% Gts < time% Gnts) run GWSWEX
 
     INTEGER, PARAMETER  :: STRLEN=256
 

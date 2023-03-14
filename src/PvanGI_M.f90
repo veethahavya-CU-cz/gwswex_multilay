@@ -38,7 +38,7 @@ FUNCTION kUS(self, s, ks)
 
 		! saturation relaxation introduced for numerical stability in cases where sat <= theta_r to avoid returning a kUS value of 0
 		IF(s < theta_r .OR. s == theta_r) THEN
-			sat = ((sat_relaxation)/(theta_s-theta_r))
+			sat = ((s + sat_relaxation)/(theta_s-theta_r))
 			! CALL plogger_Muz% log(plogger_Muz% DEBUG, "saturation relaxation applied")
 		ELSE
 			sat = ((MIN(s, theta_s)-theta_r)/(theta_s-theta_r))

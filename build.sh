@@ -89,12 +89,12 @@ while getopts ':pndh' opt; do
         d)
             cd src/
             echo '========================================  Compiling GWSWEX fortran module  ========================================' &> ../build.log
-            gfortran -c GWSWEX.f90 -g \
+            gfortran -c GWSWEX.f90 -g -fbacktrace -fcheck=all \
                 -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
                 -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
                 -fopenmp -Wall -Wno-conversion -Wno-conversion-extra -Wno-tabs -O3 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
                 >>../build.log 2>&1
-            # -pedantic
+            # -pedantic -fsanitize=address,zero,undefined
             if [ $? -eq 0 ]; then
                 echo $'========================================  Successfully compiled GWSWEX fortran module  ======================================== \n\n\n' >> ../build.log
                 echo '========================================  Compiling GWSWEX debugger  ========================================' >> ../build.log

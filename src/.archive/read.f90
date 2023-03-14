@@ -10,7 +10,7 @@ program read
     read(1) bot
     close(1)
 
-    write(*,*) top
-    write(*,*) bot
+    !write(*,*) top
+    !write(*,*) bot
     
 end program read

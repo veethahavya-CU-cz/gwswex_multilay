@@ -12,7 +12,7 @@
 !	+ P 	- 	procedures
 
 
-! TODO: include a helper subroutine here to pass a variable as pointer to GWSWEX wrapper
+! #TODO: include a helper subroutine here to pass a variable as pointer to GWSWEX wrapper
 
 
 MODULE Mtiming
@@ -30,7 +30,7 @@ MODULE Mtiming
 		INTEGER(INT32), POINTER :: Lts
 	END TYPE Ctime
 
-	! TODO: add a pass procedure to move a ts ahead
+	! #TODO: add a pass procedure to move a ts ahead
 
 END MODULE Mtiming
 
@@ -168,7 +168,7 @@ MODULE Mstorages
 	! base storage type
 		! storage:											[m] 	[e,t]								{relation defined by the child type}
 		! Ldischarge: 										[m/s] 	[e,t]								{ - }
-		REAL(REAL128), DIMENSION(:,:), POINTER :: Gstorage, Lstorage
+		REAL(REAL128), DIMENSION(:,:), ALLOCATABLE :: Gstorage, Lstorage
 		REAL(REAL128), DIMENSION(:,:), ALLOCATABLE :: Ldischarge
 
 	END TYPE Cstorage
@@ -183,6 +183,7 @@ MODULE Mstorages
 		REAL(REAL64), DIMENSION(:), POINTER :: top
 		REAL(REAL64), DIMENSION(:,:), POINTER :: bot
 		REAL(REAL128), DIMENSION(:,:), ALLOCATABLE :: Gepv, Lepv
+		REAL(REAL128), DIMENSION(:,:,:), ALLOCATABLE :: Gepvnl
 	END TYPE Cuz
 
 	TYPE, EXTENDS(Cstorage) :: Cgw
@@ -218,7 +219,7 @@ MODULE Mstorages
 		REAL(REAL128), ALLOCATABLE :: Lepv
 		REAL(REAL64), ALLOCATABLE :: RWubound, RWlbound
 		REAL(REAL64), POINTER :: ADubound, ADlbound
-		REAL(REAL128), ALLOCATABLE :: EQstorage, infiltration, exfiltration, kUS_inf, kUS_exf
+		REAL(REAL128), ALLOCATABLE :: EQstorage, infiltration, exfiltration, inf_cap, exf_cap
 		REAL(REAL128), ALLOCATABLE :: IC, IC_ratio
 
 		! CONTAINS
@@ -230,11 +231,11 @@ MODULE Mstorages
 	! to store, access, and manipulate lumped unsaturated zone parameters
 		! nlay (number of real vertical layers): 			[-] 	[-]									{1 - 128}
 		! Aubound, Albound (abs. upper and lower bounds): 	[m]		[nlay]								{relative to the defined datum}
-		!? TODO: add option to specify whether the layers are physical or virtual to enable single vanGenuchten parameter set for all layers
+		!? #TODO: add option to specify whether the layers are physical or virtual to enable single vanGenuchten parameter set for all layers
 		TYPE(Csm), DIMENSION(:), POINTER :: SM ! 				[nlay]
 		INTEGER(INT8) :: nlay, gws_bnd_smid
-		REAL(REAL64), POINTER :: Aubound
-		REAL(REAL128), POINTER :: Albound
+		! REAL(REAL64), POINTER :: Aubound
+		! REAL(REAL128) :: Albound
 		LOGICAL :: isactive
 		CONTAINS
 			PROCEDURE, PASS :: init
@@ -272,7 +273,7 @@ MODULE model
 	TYPE(Cpaths) :: paths
 	TYPE(Clogger), POINTER :: logger
 
-	INTEGER(INT32)  :: nelements, e, l
+	INTEGER(INT32)  :: nelements !#TODO: add var(s) to store elem id from MF6 and DFM
 	TYPE(Ctime) :: time
 
 	TYPE(Cuz) :: UZ
@@ -283,7 +284,7 @@ MODULE model
 
 	TYPE(Cext_forcings) :: EXTF
 
-	TYPE(Csettings) :: solver_settings
+	TYPE(Csettings) :: SS
 	
 	INTEGER, PARAMETER  :: lu=42, tu=99, STRLEN=256
 

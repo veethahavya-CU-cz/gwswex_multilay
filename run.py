@@ -42,7 +42,7 @@ def plot(elem, nts_ll, nts_ul, plotWlev=True, plotPrec=True, plotDis=True, plotB
 		plt.figure(dpi=dDPI)
 		plt.xlabel("Time Steps (h)")
 		plt.ylabel("Water Levels (m.a.s.l.)")
-		plt.ylim([bot[-1,elem]-0.5, sws[elem,:].max()+0.5+top[elem]])
+		plt.ylim([bot[-1,elem]-0.5, sws[elem,nts_ll:nts_ul].max()+0.5+top[elem]])
 		plt.stackplot(range(nts_ll,nts_ul), gws[elem,nts_ll:nts_ul], sms[elem,nts_ll:nts_ul],\
 		epv[elem,nts_ll:nts_ul]-sms[elem,nts_ll:nts_ul], (np.full(nts_ul-nts_ll,top[elem])-gws[elem,nts_ll:nts_ul])*(1-porosity[elem]),\
 		sws[elem,nts_ll:nts_ul], labels=["Groundwater","Soil Moisture", "Effective Pore Volume", "Soil Volume", "Surface Water"], colors=pal)
@@ -62,7 +62,7 @@ def plot(elem, nts_ll, nts_ul, plotWlev=True, plotPrec=True, plotDis=True, plotB
 		plt.plot(range(nts_ll,nts_ul+1), np.full((nts_ul-nts_ll)+1,bot[-1,elem]), color='black', linewidth=0.5, label="Bottom")
 		plt.legend(loc='lower right', fontsize=3)
 		plt.tight_layout()
-		plt.xticks(range(nts_ll-1,nts_ul-1,24*30))
+		plt.xticks(range(nts_ll-1,nts_ul-1,int((nts_ul-nts_ll)/6)))
 
 	def balPlot():
 		plt.figure(dpi=dDPI)
@@ -111,14 +111,14 @@ bot[1] = top - 15
 bot[2] = top - 30
 
 porosity = np.full(elems, pvanGI.theta_s, dtype=np.float64, order='F')
-ks = np.full(elems, 9000e-5, dtype=np.float64, order='F')
+ks = np.full(elems, 50-5, dtype=np.float64, order='F')
 chd = np.full(elems, 0, dtype=int, order='F')
-p = np.full((elems,Gnts+1), 2.5*(1e-3/3600)) #mm/h
+p = np.full((elems,Gnts+1), 2.5*(1e-3/3600))
 p[:,0:500] = 3.5*(1e-3/3600)
 p[:,500:750] = 0*(1e-3/3600)
 p[:,1000:1250] = 0*(1e-3/3600)
 p[:,1000:1250] = 0*(1e-3/3600)
-# p[:,1750:2000] = 0*(1e-3/3600)
+p[:,1750:2000] = 0*(1e-3/3600)
 p[:,2100:Gnts] = 0*(1e-3/3600)
 et = np.full((elems,Gnts+1), 0.33*(1e-3/3600))
 

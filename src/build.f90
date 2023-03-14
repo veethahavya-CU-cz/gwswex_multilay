@@ -24,6 +24,8 @@ SUBROUTINE build(Fyaml_path)
 	TYPE(YAMLMap), DIMENSION(:), ALLOCATABLE :: yc_model_domain_lays
 	INTEGER :: ires, Gdt_copy
 
+	INTEGER(INT32) :: e, l
+
 	CHARACTER(LEN=STRLEN) :: strbuffer, strbuffer2, fpath
 	REAL(REAL64), DIMENSION(4) :: vanG_pars
 	REAL(REAL64), DIMENSION(:), ALLOCATABLE :: r64temp1d
@@ -224,7 +226,7 @@ SUBROUTINE build(Fyaml_path)
 			READ(tu) UZ% layer(l)% isactive
 			CLOSE (UNIT=tu)
 		END IF
-		! (?) TODO: check if all underlying layers are active when one layer is declared as active
+		! (?) #TODO: check if all underlying layers are active when one layer is declared as active
 
 		ALLOCATE(UZ% layer(l)% Aubound(nelements), UZ% layer(l)% Albound(nelements))
 		IF (l == 1) THEN
@@ -233,7 +235,7 @@ SUBROUTINE build(Fyaml_path)
 			UZ% layer(l)% Aubound => UZ% bot(l-1, :)
 		END IF
 		UZ% layer(l)% Albound => UZ% bot(l, :)
-		! TODO: check if all bots lie below the tops or are at least equal to the top
+		! #TODO: check if all bots lie below the tops or are at least equal to the top
 
 		! read the vanGenuchten parameters
 		vanG_pars = yc_model_domain_lays(l)% value_double_1d("vanG", ires)
@@ -353,17 +355,17 @@ SUBROUTINE build(Fyaml_path)
 	yc_model_solver = yp_model% value_map("solver settings")
 
 	i8temp = SIZE(yc_model_solver% value_double_1d("pet_intensities", ires))
-	ALLOCATE(solver_settings% pet_intensities(i8temp), solver_settings% pet_nts(i8temp))
+	ALLOCATE(SS% pet_intensities(i8temp), SS% pet_nts(i8temp))
 
-	solver_settings% pet_intensities = yc_model_solver% value_double_1d("pet_intensities", ires)
-	solver_settings% pet_nts = yc_model_solver% value_int_1d("pet_nts", ires)
+	SS% pet_intensities = yc_model_solver% value_double_1d("pet_intensities", ires)
+	SS% pet_nts = yc_model_solver% value_int_1d("pet_nts", ires)
 
 	CALL yc_model_solver% destroy()
 
-	! TODO: read [gw_tolerance, sw_tolerance, sm_gw_fluctuation_tolerance]
-	! TODO: add option under utils to set the number of OMP threads and precision for input files, vars, and output files
-	solver_settings% max_iterations = 10
-	solver_settings% sm_gw_fluctuation_tolerance = 1.0E-9
+	! #TODO: read [gw_tolerance, sw_tolerance, sm_gw_fluctuation_tolerance]
+	! #TODO: add option under utils to set the number of OMP threads and precision for input files, vars, and output files
+	SS% max_iterations = 10
+	SS% sm_gw_fluctuation_tolerance = 1.0E-9
 
 	CALL yc_path_files% destroy()
 	CALL yp_model% destroy()
@@ -373,6 +375,8 @@ SUBROUTINE build(Fyaml_path)
 		CALL UZ_(e)% init(e, UZ, GW, time)
 	END DO
 	! $OMP END PARALLEL DO
+
+ALLOCATE(UZ% Gepvnl(UZ% nlay, nelements, time% Gnts+1))
 
 	CALL yaml_close_file(fyaml)
 

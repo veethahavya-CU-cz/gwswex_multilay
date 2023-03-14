@@ -13,22 +13,16 @@ os.environ['OMP_NUM_THREADS'] = str(psutil.cpu_count(logical = False))
 sys.path.append(os.path.abspath('libs/'))
 from gwswex_wrapper import gwswex as GWSWEX
 
+
+Fyaml = create_string_buffer(b'/home/gwswex_dev/gwswex_multilay/gwswex.yml', 256)
+
 # %%
-def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True, plotDis=True, plotBal=True, savefig=True, dDPI=90, pDPI=1600, alpha_scatter=0.7, scatter_size=3, format='jpg'):
+def plot(elem, nts_ll, nts_ul, plotWlev=True, plotPrec=True, plotDis=True, plotBal=True, savefig=True, dDPI=90, pDPI=1600, alpha_scatter=0.7, scatter_size=3, format='jpg'):
 	#formats = jpg, svg, png, jpg
 	fig_path = os.path.join(op_path, 'figs/')
 	if not os.path.exists(fig_path):
 		os.makedirs(fig_path)
 	pal = ['#E74C3C', '#2ECC71', '#5EFCA1', '#E7AC3C', '#2980B9', '#1A3BFF', '#FF6600'] #[gw, sms, epv, sv, sw, p, et]
-	if nlay != 1:
-		pal_nlay = ['#E74C3C', ]
-		for i in range(nlay):
-			pal_nlay.append(pal[1])
-			pal_nlay.append(pal[2])
-			pal_nlay.append(pal[3])
-		pal_nlay.append(pal[4])
-
-
 
 	def disPlot(elem):
 		plt.figure(dpi=dDPI)
@@ -42,64 +36,21 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 		alpha=alpha_scatter, s=scatter_size)
 		plt.legend(loc='best', fontsize='small')
 		plt.tight_layout()
-		plt.xticks(range(nts_ll,nts_ul,tick_res))
+		plt.xticks(range(nts_ll,nts_ul,24*30))
 
 	def wlevPlot(elem,gws,sws,sms):
 		plt.figure(dpi=dDPI)
 		plt.xlabel("Time Steps (h)")
 		plt.ylabel("Water Levels (m.a.s.l.)")
-		plt.ylim([bot[-1,elem]-0.5, np.nanmax(sws[elem,:])+0.5+top[elem]])
+		plt.ylim([bot[-1,elem]-0.5, sws[elem,nts_ll:nts_ul].max()+0.5+top[elem]])
 		plt.stackplot(range(nts_ll,nts_ul), gws[elem,nts_ll:nts_ul], sms[elem,nts_ll:nts_ul],\
 		epv[elem,nts_ll:nts_ul]-sms[elem,nts_ll:nts_ul], (np.full(nts_ul-nts_ll,top[elem])-gws[elem,nts_ll:nts_ul])*(1-porosity[elem]),\
 		sws[elem,nts_ll:nts_ul], labels=["Groundwater","Soil Moisture", "Effective Pore Volume", "Soil Volume", "Surface Water"], colors=pal)
 		if plotPrec:
 			p_dom, et_dom = [], []
-			ht = (np.nanmax(sws[elem,:])+0.5+top[elem]) + (bot[-1,elem]-0.5)
-			for ts in range(nts_ul-nts_ll):
-				if p[elem,ts+1] > et[elem,ts+1]:
-					p_dom.append(ht)
-					et_dom.append(0)
-				else:
-					et_dom.append(ht)
-					p_dom.append(0)
-			plt.stackplot(range(nts_ll,nts_ul), p_dom, labels=["Precipitation Dominant", ], colors=['#A8EAED'], alpha=0.21)
-			plt.stackplot(range(nts_ll,nts_ul), et_dom, labels=["Evapotranspiration Dominant", ], colors=['#E8A78B'], alpha=0.21)
-		plt.plot(range(nts_ll,nts_ul+1), np.full((nts_ul-nts_ll)+1,top[elem]), color='#502D16', linewidth=0.5, label="Ground Level")
-		plt.plot(range(nts_ll,nts_ul+1), np.full((nts_ul-nts_ll)+1,bot[-1,elem]), color='black', linewidth=0.5, label="Bottom")
-		plt.legend(loc='lower right', fontsize=3)
-		plt.tight_layout()
-		plt.xticks(range(nts_ll-1,nts_ul-1,int((nts_ul-nts_ll)/6)))
-
-
-	def wlevPlot_nlay(elem,gws,sws,sms,epv):
-		plt.figure(dpi=dDPI)
-		plt.xlabel("Time Steps (h)")
-		plt.ylabel("Water Levels (m.a.s.l.)")
-		plt.ylim([bot[-1,elem]-0.5, np.nanmax(sws[elem,1:])+0.5+top[elem]])
-		stack = [gws[elem,nts_ll:nts_ul], ]
-		for l in range(nlay-1,-1,-1):
-			stack.append(sms[l][elem,nts_ll:nts_ul])
-			try:
-				stack.append(epv[l][elem,nts_ll:nts_ul]-sms[l][elem,nts_ll:nts_ul])
-			except:
-				print(epv[l][elem,nts_ll:nts_ul],sms[l][elem,nts_ll:nts_ul])
-			sv = []
-			for t in range(nts_ul-nts_ll):
-				if l == 0:
-					sv.append(max((top[elem] - max(bot[l,elem], gws[elem,nts_ll:nts_ul][t]))*(1-porosity[elem]),0))
-				else:
-					sv.append(max((bot[l-1,elem] - max(bot[l,elem], gws[elem,nts_ll:nts_ul][t]))*(1-porosity[elem]),0))
-			stack.append(sv)
-		stack.append(sws[elem,nts_ll:nts_ul])
-
-		plt.stackplot(range(nts_ll,nts_ul), stack, \
-			labels=["Groundwater","Soil Moisture", "Effective Pore Volume", "Soil Volume", "Surface Water"], colors=pal_nlay)
-		
-		if plotPrec:
-			p_dom, et_dom = [], []
 			ht = (sws[elem,:].max()+0.5+top[elem]) + (bot[-1,elem]-0.5)
 			for ts in range(nts_ul-nts_ll):
-				if p[elem,ts+1] > et[elem,ts+1]:
+				if p[elem,ts] > et[elem,ts]:
 					p_dom.append(ht)
 					et_dom.append(0)
 				else:
@@ -128,10 +79,7 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 			plt.savefig(os.path.join(fig_path,"discharges."+format), format=format, dpi=pDPI)
 
 	if plotWlev:
-		if nlay == 1:
-			wlevPlot(elem,gws,sws,sms)
-		else:
-			wlevPlot_nlay(elem,gws,sws,sms,epv)
+		wlevPlot(0,gws,sws,sms)
 		if savefig:
 			plt.savefig(os.path.join(fig_path,"water_levels."+format), format=format, dpi=pDPI)
 
@@ -144,10 +92,10 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 elems = int(1)
 nlay = 3
 
+Gnts = int(24*30*6) #one every hour for 6 months
 Gdt = 3600
 tstart = datetime(2020, 1, 1, 0, 0, 0)
-tstop = datetime(2020, 1, 2, 0, 0, 0)
-Gnts = int((tstop-tstart).total_seconds()/Gdt)
+tstop = tstart + timedelta(seconds=Gnts*Gdt)
 
 @dataclass
 class pvanGI:
@@ -158,20 +106,24 @@ class pvanGI:
 
 top = np.full(elems, 150, dtype=np.float64, order='F')
 bot = np.full((nlay, elems), 0, dtype=np.float64, order='F')
-bot[0] = top - 1
-bot[1] = top - 3
-bot[2] = top - 10
+bot[0] = top - 5
+bot[1] = top - 15
+bot[2] = top - 30
 
 porosity = np.full(elems, pvanGI.theta_s, dtype=np.float64, order='F')
-ks = np.full(elems, 75e-4, dtype=np.float64, order='F')
+ks = np.full(elems, 500e-5, dtype=np.float64, order='F')
 chd = np.full(elems, 0, dtype=int, order='F')
-p = np.full((elems,Gnts+1), 50*(1e-3/3600)) #mm/h
-p[0,int(Gnts/2):Gnts+1] = 1*(1e-3/3600)
-
-et = np.full((elems,Gnts+1), 33.33*(1e-3/3600))
+p = np.full((elems,Gnts+1), 2.5*(1e-3/3600))
+p[:,0:500] = 3.5*(1e-3/3600)
+p[:,500:750] = 0*(1e-3/3600)
+p[:,1000:1250] = 0*(1e-3/3600)
+p[:,1000:1250] = 0*(1e-3/3600)
+p[:,1750:2000] = 0*(1e-3/3600)
+p[:,2100:Gnts] = 0*(1e-3/3600)
+et = np.full((elems,Gnts+1), 0.33*(1e-3/3600))
 
 isactive = np.full((nlay, elems), 1, dtype=int, order='F')
-gw_ini = np.array(bot[2] + 3, dtype=np.float64, order='F')
+gw_ini = np.array(bot[2] + 5, dtype=np.float64, order='F')
 sw_ini = np.array(np.random.default_rng().uniform(0, 1e-2, elems), dtype=np.float64, order='F')
 
 #%%
@@ -212,36 +164,15 @@ fwrite('p.ip', p)
 fwrite('et.ip', et)
 
 #%%
-GWSWEX.init('/home/gwswex_dev/gwswex_multilay/test.yml')
+GWSWEX.init('/home/gwswex_dev/gwswex_multilay/gwswex.yml')
 
 GWSWEX.run(gw_ini, sw_ini)
-
-# gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-# sws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-# sms = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
-# epv = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
-
-# GWSWEX.pass_vars_nlay(gws, sws, sms, epv)
-
-# plot(0, 1, Gnts+1, nlay=1, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
 
 gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
 sws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
 sms = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
 epv = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
 GWSWEX.pass_vars(gws, sws, sms, epv)
-plot(0, 1, Gnts+1, nlay=1, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
+
+plot(0, 1, Gnts+1, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
 # %%
-
-# gw_dis, sw_dis, sm_dis = np.empty(gws.shape), np.empty(gws.shape), np.empty(gws.shape)
-
-# for i in range(1,gws.shape[1]):
-#     gw_dis[0][i-1] = (gws[0][i] - gws[0][i-1])*porosity[0]
-#     sw_dis[0][i-1] = sws[0][i] - sws[0][i-1]
-#     sm_dis[0][i-1] = sms[0][i] - sms[0][i-1]
-# qout = gw_dis.sum() + sw_dis.sum() + sm_dis.sum()
-# qin = (p.sum() - et.sum())*Gdt
-
-# ll=0
-# plt.plot((gw_dis[0][ll:-1]+sw_dis[0][ll:-1]+sm_dis[0][ll:-1]))
-# plt.plot((p[0][ll:-1]-et[0][ll:-1])*Gdt)

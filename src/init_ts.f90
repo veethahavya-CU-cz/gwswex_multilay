@@ -10,14 +10,24 @@ SUBROUTINE init_ts(auto_advance, gw_ini, sw_ini, first_run)
 
 	INTEGER(INT16) :: idx
 	CHARACTER(LEN=STRLEN) :: strbuffer
+	INTEGER(INT32) :: e, l
 
 	REAL(REAL32) :: ipet_ll, ipet_ul, pet_intensity
 
 	TYPE(Csm), POINTER :: pSM_
-!TODO: rethink auto advance and keep only first_run flag (and add option to set SM ini too)?
+
+	LOGICAL :: chk
+!#TODO: rethink auto advance and keep only first_run flag (and add option to set SM ini too)?
 	! advance the global timestep and deallocate the local storages, epvs, and discharges from the previous timestep 
 	IF(auto_advance) THEN
 		time% Gts = time% Gts + 1
+		chk = ALLOCATED(GW% Lstorage)
+		chk = ALLOCATED(UZ% Lstorage)
+		chk = ALLOCATED(UZ% Lepv)
+		chk = ALLOCATED(SW% Lstorage)
+		chk = ALLOCATED(GW% Ldischarge)
+		chk = ALLOCATED(UZ% Ldischarge)
+		chk = ALLOCATED(SW% Ldischarge)
 		DEALLOCATE(GW% Lstorage, UZ% Lstorage, UZ% Lepv, SW% Lstorage, GW% Ldischarge, UZ% Ldischarge, SW% Ldischarge)
 		! $OMP PARALLEL DO
 		DO e = 1, nelements
@@ -47,10 +57,10 @@ SUBROUTINE init_ts(auto_advance, gw_ini, sw_ini, first_run)
 
 	! set the local timestep size based on the average PET intensity
 	ipet_ll = 0.0
-	DO idx = 1, SIZE(solver_settings% pet_intensities)
-		ipet_ul = solver_settings% pet_intensities(idx)
+	DO idx = 1, SIZE(SS% pet_intensities)
+		ipet_ul = SS% pet_intensities(idx)
 		IF (pet_intensity >= ipet_ll .AND. pet_intensity < ipet_ul) THEN
-			time% Lnts = solver_settings% pet_nts(idx)
+			time% Lnts = SS% pet_nts(idx)
 			EXIT
 		ELSE
 			ipet_ll = ipet_ul
@@ -87,7 +97,7 @@ SUBROUTINE init_ts(auto_advance, gw_ini, sw_ini, first_run)
 
 					pSM_% Lstorage(1) = pSM_% Gstorage(time% Gts-1)
 
-					! TODO: check redundancy
+					! #TODO: check redundancy
 					pSM_% Lepv = ABS(pSM_% RWubound - pSM_% RWlbound) * pSM_% porosity
 
 					CALL logger% log(logger% DEBUG, "Rbounds: ", pSM_% RWubound, pSM_% RWlbound)
@@ -121,7 +131,7 @@ SUBROUTINE init_ts(auto_advance, gw_ini, sw_ini, first_run)
 
 	! set local storage to the global storage of last dt (or initial conditions for first dt)
 	CALL logger% log(logger% TRACE, "Initialising local storages")
-! write(*,*) time% Gts
+! !write(*,*) time% Gts
 	IF(PRESENT(gw_ini)) THEN
 		GW% Lstorage(:, 1) = gw_ini
 	ELSE
