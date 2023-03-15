@@ -54,5 +54,5 @@ paths:
     EXTF.et: 1
 utils:
   logger:
-    level: -99
+    level: 99
     fname: GWSWEX.log

@@ -27,8 +27,7 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 			pal_nlay.append(pal[2])
 			pal_nlay.append(pal[3])
 		pal_nlay.append(pal[4])
-
-
+		
 
 	def disPlot(elem):
 		plt.figure(dpi=dDPI)
@@ -56,7 +55,7 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 			p_dom, et_dom = [], []
 			ht = (np.nanmax(sws[elem,:])+0.5+top[elem]) + (bot[-1,elem]-0.5)
 			for ts in range(nts_ul-nts_ll):
-				if p[elem,ts+1] > et[elem,ts+1]:
+				if p[elem,ts] > et[elem,ts]:
 					p_dom.append(ht)
 					et_dom.append(0)
 				else:
@@ -99,7 +98,7 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 			p_dom, et_dom = [], []
 			ht = (sws[elem,:].max()+0.5+top[elem]) + (bot[-1,elem]-0.5)
 			for ts in range(nts_ul-nts_ll):
-				if p[elem,ts+1] > et[elem,ts+1]:
+				if p[elem,ts] > et[elem,ts]:
 					p_dom.append(ht)
 					et_dom.append(0)
 				else:
@@ -163,9 +162,9 @@ bot[1] = top - 3
 bot[2] = top - 10
 
 porosity = np.full(elems, pvanGI.theta_s, dtype=np.float64, order='F')
-ks = np.full(elems, 75e-4, dtype=np.float64, order='F')
+ks = np.full(elems, 66e-5, dtype=np.float64, order='F')
 chd = np.full(elems, 0, dtype=int, order='F')
-p = np.full((elems,Gnts+1), 50*(1e-3/3600)) #mm/h
+p = np.full((elems,Gnts+1), 75*(1e-3/3600)) #mm/h
 p[0,int(Gnts/2):Gnts+1] = 1*(1e-3/3600)
 
 et = np.full((elems,Gnts+1), 33.33*(1e-3/3600))
@@ -216,21 +215,23 @@ GWSWEX.init('/home/gwswex_dev/gwswex_multilay/test.yml')
 
 GWSWEX.run(gw_ini, sw_ini)
 
-# gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-# sws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-# sms = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
-# epv = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
-
-# GWSWEX.pass_vars_nlay(gws, sws, sms, epv)
-
-# plot(0, 1, Gnts+1, nlay=1, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
-
 gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
 sws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-sms = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-epv = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-GWSWEX.pass_vars(gws, sws, sms, epv)
-plot(0, 1, Gnts+1, nlay=1, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
+sms = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
+epv = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
+
+GWSWEX.pass_vars_nlay(gws, sws, sms, epv)
+
+plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
+
+# gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+# sws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+# sms = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+# epv = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+# GWSWEX.pass_vars(gws, sws, sms, epv)
+# plot(0, 1, Gnts+1, nlay=1, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
+
+
 # %%
 
 # gw_dis, sw_dis, sm_dis = np.empty(gws.shape), np.empty(gws.shape), np.empty(gws.shape)
@@ -240,8 +241,10 @@ plot(0, 1, Gnts+1, nlay=1, plotWlev=True, plotPrec=True, plotDis=False, plotBal=
 #     sw_dis[0][i-1] = sws[0][i] - sws[0][i-1]
 #     sm_dis[0][i-1] = sms[0][i] - sms[0][i-1]
 # qout = gw_dis.sum() + sw_dis.sum() + sm_dis.sum()
-# qin = (p.sum() - et.sum())*Gdt
+# qin = (p[0].sum() - et[0].sum())*Gdt
 
 # ll=0
+# plt.figure(figsize=(10,5))
 # plt.plot((gw_dis[0][ll:-1]+sw_dis[0][ll:-1]+sm_dis[0][ll:-1]))
 # plt.plot((p[0][ll:-1]-et[0][ll:-1])*Gdt)
+# plt.show()

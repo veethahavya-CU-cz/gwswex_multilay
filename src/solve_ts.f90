@@ -118,7 +118,7 @@ WRITE(*,*) "in1"
             CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
             IF(.NOT. UZ_(e)% isactive) RETURN ! #TODO: calc discharges and then return
 WRITE(*,*) "out1"
-            CALL UZ_(e)% solve(e, t, dt, UZ, GW, SW, time, SS, first_run=.FALSE.) ! #FIXME: need to transfer SM(gws_bnd_smid) to GW after solve!
+            CALL UZ_(e)% solve_again(e, t, dt, UZ, GW, SW, time, SS) ! #FIXME: need to transfer SM(gws_bnd_smid) to GW after solve!
 ! write(*,*) "*"
 pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
 ! write(*,*) "*", pSM_% exfiltration

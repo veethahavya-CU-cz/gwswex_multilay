@@ -241,6 +241,7 @@ MODULE Mstorages
 			PROCEDURE, PASS :: init
 			PROCEDURE, PASS :: resolve
 			PROCEDURE, PASS :: solve
+			PROCEDURE, PASS :: solve_again
 	END TYPE Cuz_
 
 	TYPE Cext_forcings

@@ -387,7 +387,7 @@ IF(ABS(GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) > 0.25) write(*,*) "*5", time% G
                 ELSE
                     GW% Lstorage(e,t) = GW% Lstorage(e,t) + (pSM_% Lstorage(t) / pSM_% porosity)
 IF(ABS(GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) > 0.25) write(*,*) "*7", time% Gts, time% Lts, GW% Lstorage(e,t-1), GW% Lstorage(e,t)
-! write(*,*) "***" ! #BUG: segfault here!! check logic
+! write(*,*) "***" ! #FIXME: segfault here!! check logic
                     CALL deactivate(pSM_, gw_bound=.FALSE., sm1=(smn == 1))
 
                     CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SM", smn, " is not active anymore")
@@ -542,11 +542,12 @@ SUBROUTINE solve(self, e, t, dt, UZ, GW, SW, time, SS, first_run)
             CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "exf_cap = ", pSM_% exf_cap)
             
     ! pSM_% IC_ratio = 1.0        
-            pSM_% exfiltration = MIN((pSM_% Lstorage(t) - pSM_% EQstorage) * pSM_% IC_ratio, (pSM_% exf_cap * pSM_% IC_ratio), (pSM_% Lstorage(t) - pSM_% EQstorage)) ! negative exfiltration (i.e. infiltration from underlying layers) is not capped to always allow replenishment of SM until SMeq is reached as it is based on relatively instanteous capilary forces
-            
             IF(.NOT. first_run) THEN
                 pSM_% exf_cap = MAX(pSM_% exf_cap - MAX(pSM_% exfiltration, 0.0), 0.0)
             END IF
+
+            pSM_% exfiltration = MIN((pSM_% Lstorage(t) - pSM_% EQstorage) * pSM_% IC_ratio, (pSM_% exf_cap * pSM_% IC_ratio), (pSM_% Lstorage(t) - pSM_% EQstorage)) ! negative exfiltration (i.e. infiltration from underlying layers) is not capped to always allow replenishment of SM until SMeq is reached as it is based on relatively instanteous capilary forces
+            
 
             CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "exfiltration was ", pSM_% exfiltration)
 
@@ -579,3 +580,126 @@ SUBROUTINE solve(self, e, t, dt, UZ, GW, SW, time, SS, first_run)
     ! pSM_ => self% SM(self% gws_bnd_smid)
     ! IF(pSM_% exfiltration > 0.1) write(*,*) "exf: ", time% Gts, time% Lts, REAL(pSM_% exfiltration,4), REAL(pSM_% Lstorage(t),4), REAL(pSM_% Lepv,4), REAL(pSM_% exf_cap,4), REAL(pSM_% IC_ratio,4), self% gws_bnd_smid
 END SUBROUTINE solve
+
+
+SUBROUTINE solve_again(self, e, t, dt, UZ, GW, SW, time, SS)
+
+    USE Mtiming, ONLY : Ctime
+
+    CLASS(Cuz_), INTENT(INOUT) :: self
+
+    INTEGER(INT32), INTENT(IN) :: e, t
+    REAL(REAL32), INTENT(IN) :: dt
+    TYPE(Cuz), INTENT(INOUT) :: UZ
+    TYPE(Cgw), INTENT(INOUT) :: GW
+    TYPE(Csw), INTENT(INOUT) :: SW
+    TYPE(Ctime), INTENT(IN) :: time
+    TYPE(Csettings), INTENT(IN) :: SS
+
+    TYPE(Csm), POINTER :: pSM_, pSM_prev_
+    INTEGER(INT8) :: smn
+
+    CALL plogger_Mstorages% log(plogger_Mstorages% TRACE, "*** in UZ_solve-again ***")
+    CALL plogger_Mstorages% log(plogger_Mstorages% TRACE, "Solving GW bound SM layer: e,t = ", e, t-1)
+
+    smn = 1
+    pSM_ => self% SM(smn)
+    CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "** SM = ", smn, " **")
+
+    CALL pSM_% vanG% setvars()
+    pSM_% EQstorage = pSM_% vanG% integrate(pSM_% RWubound, pSM_% RWlbound)
+    CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SMeq = ", pSM_% EQstorage)
+
+    pSM_% exf_cap = MAX(pSM_% exf_cap - MAX(pSM_% exfiltration, 0.0), 0.0)
+
+    CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "IC, IC_ratio = ", pSM_% IC, pSM_% IC_ratio)
+    CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "exf_cap = ", pSM_% exf_cap)
+    CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Lstorage was ", pSM_% Lstorage(t))
+! pSM_% IC_ratio = 1.0
+    pSM_% exfiltration = MIN((pSM_% Lstorage(t) - pSM_% EQstorage) * pSM_% IC_ratio, (pSM_% exf_cap * pSM_% IC_ratio), (pSM_% Lstorage(t) - pSM_% EQstorage)) ! negative exfiltration (i.e. infiltration from underlying layers) is not capped to always allow replenishment of SM until SMeq is reached as it is based on relatively instanteous capilary forces
+! #TODO: verify above - compare to original
+
+    pSM_% Lstorage(t) = pSM_% Lstorage(t) - pSM_% exfiltration
+
+!     IF((pSM_% Lstorage(t) > pSM_% Lepv) .AND. (.NOT. pSM_% gw_bound)) THEN
+!         SW% Lstorage(e,t) = SW% Lstorage(e,t) + (pSM_% Lstorage(t) - pSM_% Lepv)
+!         pSM_% Lstorage(t) = pSM_% Lepv
+!     END IF
+
+!     IF((pSM_% Lstorage(t) > pSM_% Lepv) .AND. (first_run) .AND. (pSM_% gw_bound)) THEN
+!         pSM_% exfiltration = pSM_% exfiltration + (pSM_% Lstorage(t) - pSM_% Lepv)
+!         pSM_% Lstorage(t) = pSM_% Lepv
+!     END IF
+! ! #TODO: verify: both cases above and below
+!     IF((pSM_% Lstorage(t) > pSM_% Lepv) .AND. (.NOT. first_run) .AND. (pSM_% gw_bound)) THEN
+!         GW% Lstorage(e,t) = GW% Lstorage(e,t) + (pSM_% Lstorage(t) - pSM_% Lepv) / pSM_% porosity
+! IF(ABS(GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) > 0.25) write(*,*) "*8", time% Gts, time% Lts, GW% Lstorage(e,t-1), GW% Lstorage(e,t)
+!         pSM_% Lstorage(t) = pSM_% Lepv
+!     END IF
+
+    IF(pSM_% Lstorage(t) == pSM_% Lepv) THEN
+        GW% Lstorage(e,t) = UZ% top(e)
+        pSM_% Lstorage(t) = 0.0 ! #TODO: verify
+        CALL self% resolve(e, t, UZ, GW, SW, time, SS)
+        IF(.NOT. self% isactive) RETURN 
+    END IF
+
+    CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "exfiltration = ", pSM_% exfiltration)
+    CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Lstorage is ", pSM_% Lstorage(t))
+    CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "ePV = ", pSM_% Lepv)
+    
+    DO smn = 2, self% gws_bnd_smid
+        pSM_ => self% SM(smn)
+        IF(pSM_% isactive) THEN
+            pSM_prev_ => self% SM(smn-1)
+            CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "** SM = ", smn, " **")
+            CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Lstorage was ", pSM_% Lstorage(t-1)) ! # FIXME: can't use this for running UZ_solve again in solve_main then!!! 
+            CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "exfiltration from prev. SM = ", pSM_prev_% exfiltration)
+            CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "ePV = ", pSM_% Lepv)
+
+            pSM_% Lstorage(t) = pSM_% Lstorage(t) + pSM_prev_% exfiltration
+            CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Lstorage after infiltration (exf. from prev.) is ", pSM_% Lstorage(t))
+
+            CALL pSM_% vanG% setvars()
+            pSM_% EQstorage = pSM_% vanG% integrate(pSM_% RWubound, pSM_% RWlbound)
+            CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SMeq = ", pSM_% EQstorage)
+            
+            CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "IC, IC_ratio = ", pSM_% IC, pSM_% IC_ratio)
+            CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "exf_cap = ", pSM_% exf_cap)
+            
+    ! pSM_% IC_ratio = 1.0        
+            pSM_% exf_cap = MAX(pSM_% exf_cap - MAX(pSM_% exfiltration, 0.0), 0.0)
+            
+            pSM_% exfiltration = MIN((pSM_% Lstorage(t) - pSM_% EQstorage) * pSM_% IC_ratio, (pSM_% exf_cap * pSM_% IC_ratio), (pSM_% Lstorage(t) - pSM_% EQstorage)) ! negative exfiltration (i.e. infiltration from underlying layers) is not capped to always allow replenishment of SM until SMeq is reached as it is based on relatively instanteous capilary forces
+
+            CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "exfiltration was ", pSM_% exfiltration)
+
+            IF(pSM_% Lstorage(t) > pSM_% Lepv) pSM_% exfiltration = pSM_% exfiltration + (pSM_% Lstorage(t) - pSM_% Lepv)
+
+            pSM_% Lstorage(t) = pSM_% Lstorage(t) - pSM_% exfiltration
+
+            CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "exfiltration, after ePV balancing = ", pSM_% exfiltration)
+            CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Lstorage is ", pSM_% Lstorage(t))
+
+            IF(pSM_% gw_bound) EXIT
+            ! #TODO: limit exfiltration to (GWS - BOT) * porosity if GWS bnd and GWS - exf < BOT and make appropriate changes in solve()
+
+        END IF
+    END DO
+
+    CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "UZ Lstorage was ", UZ% Lstorage(e,t-1))
+! !write(*,*) "calc UZS"
+    UZ% Lstorage(e,t) = 0.0
+    DO smn = 1, self% gws_bnd_smid
+        IF (self% SM(smn)% isactive) THEN
+            UZ% Lstorage(e,t) = UZ% Lstorage(e,t) + self% SM(smn)% Lstorage(t)
+        END IF
+    END DO
+! !write(*,*) "done calc UZS"
+    CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "UZ Lstorage is ", UZ% Lstorage(e,t))
+    CALL plogger_Mstorages% log(plogger_Mstorages% TRACE, "*** leaving UZ_solve-again ***")
+
+
+    ! pSM_ => self% SM(self% gws_bnd_smid)
+    ! IF(pSM_% exfiltration > 0.1) write(*,*) "exf: ", time% Gts, time% Lts, REAL(pSM_% exfiltration,4), REAL(pSM_% Lstorage(t),4), REAL(pSM_% Lepv,4), REAL(pSM_% exf_cap,4), REAL(pSM_% IC_ratio,4), self% gws_bnd_smid
+END SUBROUTINE solve_again
