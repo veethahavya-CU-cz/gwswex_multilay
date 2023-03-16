@@ -22,7 +22,7 @@ model:
     layer3:
       name: peat2
       isactive: l3_active.ip
-      vanG: [0.35, 1.25, 0.02, 0.42] # alpha, n, theta_r, theta_s42
+      vanG: [0.35, 1.25, 0.02, 0.42] # alpha, n, theta_r, theta_s
       ks: l3_ks.ip
       porosity: l3_porosity.ip
   boundary conditions:

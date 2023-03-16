@@ -78,7 +78,6 @@ END MODULE wrapper
 
 PROGRAM GWSWEX
 	USE wrapper, ONLY: init, run
-    USE iso_c_binding
 
 	IMPLICIT NONE
 

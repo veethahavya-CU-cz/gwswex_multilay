@@ -77,17 +77,16 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 		plt.ylim([bot[-1,elem]-0.5, np.nanmax(sws[elem,1:])+0.5+top[elem]])
 		stack = [gws[elem,nts_ll:nts_ul], ]
 		for l in range(nlay-1,-1,-1):
-			stack.append(sms[l][elem,nts_ll:nts_ul])
-			try:
-				stack.append(epv[l][elem,nts_ll:nts_ul]-sms[l][elem,nts_ll:nts_ul])
-			except:
-				print(epv[l][elem,nts_ll:nts_ul],sms[l][elem,nts_ll:nts_ul])
-			sv = []
-			for t in range(nts_ul-nts_ll):
+			sv, epv_l, sm = [], [], []
+			for t in range(nts_ll, nts_ul, 1):
+				sm.append(sms[l][elem,t])
+				epv_l.append(epv[l][elem,t]-sms[l][elem,t])
 				if l == 0:
-					sv.append(max((top[elem] - max(bot[l,elem], gws[elem,nts_ll:nts_ul][t]))*(1-porosity[elem]),0))
+					sv.append(max((top[elem] - max(bot[l,elem], gws[elem][t]))*(1-porosity[elem]),0))
 				else:
-					sv.append(max((bot[l-1,elem] - max(bot[l,elem], gws[elem,nts_ll:nts_ul][t]))*(1-porosity[elem]),0))
+					sv.append(max((bot[l-1,elem] - max(bot[l,elem], gws[elem][t]))*(1-porosity[elem]),0))
+			stack.append(sm)
+			stack.append(epv_l)
 			stack.append(sv)
 		stack.append(sws[elem,nts_ll:nts_ul])
 

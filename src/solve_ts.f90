@@ -109,29 +109,29 @@ RECURSIVE SUBROUTINE solve(e, t, dt, P, ET, lateral_GW_flux, lateral_SW_flux)
 
             pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
             GW% Lstorage(e,t) = GW% Lstorage(e,t-1) + (pSM_% exfiltration / pSM_% porosity) ! (pSM_% exfiltration + excess_sm) / pSM_% porosity
-IF(ABS(GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) > 0.25) write(*,*) "1", time% Gts, time% Lts, GW% Lstorage(e,t-1), GW% Lstorage(e,t)
+! IF(ABS(GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) > 0.25) write(*,*) "1", time% Gts, time% Lts, GW% Lstorage(e,t-1), GW% Lstorage(e,t)
             CALL logger% log(logger% DEBUG, "SM_exf_gwbnd = ", pSM_% exfiltration)
             CALL logger% log(logger% DEBUG, "GW_inf = ", (pSM_% exfiltration / pSM_% porosity))
             CALL logger% log(logger% DEBUG, "GW was ", GW% Lstorage(e,t-1))
             CALL logger% log(logger% DEBUG, "GW is ", GW% Lstorage(e,t))
-WRITE(*,*) "in1"
+! WRITE(*,*) "in1"
             CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
             IF(.NOT. UZ_(e)% isactive) RETURN ! #TODO: calc discharges and then return
-WRITE(*,*) "out1"
+! WRITE(*,*) "out1"
             CALL UZ_(e)% solve_again(e, t, dt, UZ, GW, SW, time, SS) ! #FIXME: need to transfer SM(gws_bnd_smid) to GW after solve!
 ! write(*,*) "*"
 pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
 ! write(*,*) "*", pSM_% exfiltration
             GW% Lstorage(e,t) = GW% Lstorage(e,t) + (pSM_% exfiltration / pSM_% porosity) ! (pSM_% exfiltration + excess_sm) / pSM_% porosity
 ! write(*,*) "*"
-IF(ABS(GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) > 0.25) write(*,*) "2", time% Gts, time% Lts, GW% Lstorage(e,t-1), GW% Lstorage(e,t)
+! IF(ABS(GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) > 0.25) write(*,*) "2", time% Gts, time% Lts, GW% Lstorage(e,t-1), GW% Lstorage(e,t)
             CALL logger% log(logger% DEBUG, "GW_inf = ", (pSM_% exfiltration / pSM_% porosity))
             CALL logger% log(logger% DEBUG, "GW was ", GW% Lstorage(e,t-1))
             CALL logger% log(logger% DEBUG, "GW is ", GW% Lstorage(e,t))
 
-WRITE(*,*) "in2"
+! WRITE(*,*) "in2"
             CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
-WRITE(*,*) "out2"
+! WRITE(*,*) "out2"
     ! !write(*,*) "here", t
             ! #TODO: CHECK!!!!!!!!!!
             ! ! ! prev_gw_storage = 0.0
@@ -207,7 +207,7 @@ WRITE(*,*) "out2"
                 SW% Lstorage(e,t) = SW% Lstorage(e,t) - ET
             ELSE
                 GW% Lstorage(e,t) = GW% Lstorage(e,t) - ((ET - SW% Lstorage(e,t)) / porosity_gwbnd)
-IF(ABS(GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) > 0.25) write(*,*) "5", time% Gts, time% Lts, GW% Lstorage(e,t-1), GW% Lstorage(e,t)
+! IF(ABS(GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) > 0.25) write(*,*) "5", time% Gts, time% Lts, GW% Lstorage(e,t-1), GW% Lstorage(e,t)
                 SW% Lstorage(e,t) = 0.0
                 CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
                 IF(.NOT. UZ_(e)% isactive) CALL solve(e, t, dt, P=0.0_REAL128, ET=0.0_REAL128) ! #TODO: assess if necessary

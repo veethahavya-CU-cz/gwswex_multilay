@@ -181,11 +181,11 @@ SUBROUTINE resolve(self, e, t, UZ, GW, SW, time, SS)
         DO smn = self% gws_bnd_smid, 1, -1
             pSM_ => self% SM(smn)
             IF(pSM_% isactive) THEN
-write(*,*) "SM is active", smn
+! write(*,*) "SM is active", smn
                 GW% Lstorage(e,t) = GW% Lstorage(e,t) + (pSM_% Lstorage(t) / pSM_% porosity)
-IF(ABS(GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) > 0.25) write(*,*) "*1", time% Gts, time% Lts, GW% Lstorage(e,t-1), GW% Lstorage(e,t)
+! IF(ABS(GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) > 0.25) write(*,*) "*1", time% Gts, time% Lts, GW% Lstorage(e,t-1), GW% Lstorage(e,t)
                 CALL deactivate(pSM_, sm1=(smn == 1))
-write(*,*) "SM is not active anymore", smn, pSM_% isactive
+! write(*,*) "SM is not active anymore", smn, pSM_% isactive
             END IF
         END DO
 
@@ -201,7 +201,7 @@ write(*,*) "SM is not active anymore", smn, pSM_% isactive
         END IF
 
         CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "UZ is not active anymore")
-write(*,*) "UZ is not active anymore", self% isactive
+! write(*,*) "UZ is not active anymore", self% isactive
         RETURN
 ! write(*,*) "not returning"
     END IF
@@ -336,7 +336,7 @@ write(*,*) "UZ is not active anymore", self% isactive
             pSM_ => self% SM(self% gws_bnd_smid)
             ! deactivate the the previously GW bound layer
             GW% Lstorage(e,t) = GW% Lstorage(e,t) + (pSM_% Lstorage(t) / pSM_% porosity)
-IF(ABS(GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) > 0.25) write(*,*) "*5", time% Gts, time% Lts, GW% Lstorage(e,t-1), GW% Lstorage(e,t)
+! IF(ABS(GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) > 0.25) write(*,*) "*5", time% Gts, time% Lts, GW% Lstorage(e,t-1), GW% Lstorage(e,t)
             CALL deactivate(pSM_, gw_bound=.TRUE., sm1=(self% gws_bnd_smid==1))
 
             CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SM", self% gws_bnd_smid, " is not active anymore")
@@ -386,7 +386,7 @@ IF(ABS(GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) > 0.25) write(*,*) "*5", time% G
                     EXIT inner
                 ELSE
                     GW% Lstorage(e,t) = GW% Lstorage(e,t) + (pSM_% Lstorage(t) / pSM_% porosity)
-IF(ABS(GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) > 0.25) write(*,*) "*7", time% Gts, time% Lts, GW% Lstorage(e,t-1), GW% Lstorage(e,t)
+! IF(ABS(GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) > 0.25) write(*,*) "*7", time% Gts, time% Lts, GW% Lstorage(e,t-1), GW% Lstorage(e,t)
 ! write(*,*) "***" ! #FIXME: segfault here!! check logic
                     CALL deactivate(pSM_, gw_bound=.FALSE., sm1=(smn == 1))
 
