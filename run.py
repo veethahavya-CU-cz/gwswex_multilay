@@ -17,12 +17,20 @@ from gwswex_wrapper import gwswex as GWSWEX
 Fyaml = create_string_buffer(b'/home/gwswex_dev/gwswex_multilay/gwswex.yml', 256)
 
 # %%
-def plot(elem, nts_ll, nts_ul, plotWlev=True, plotPrec=True, plotDis=True, plotBal=True, savefig=True, dDPI=90, pDPI=1600, alpha_scatter=0.7, scatter_size=3, format='jpg'):
+def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True, plotDis=True, plotBal=True, savefig=True, dDPI=90, pDPI=1600, alpha_scatter=0.7, scatter_size=3, format='jpg'):
 	#formats = jpg, svg, png, jpg
 	fig_path = os.path.join(op_path, 'figs/')
 	if not os.path.exists(fig_path):
 		os.makedirs(fig_path)
 	pal = ['#E74C3C', '#2ECC71', '#5EFCA1', '#E7AC3C', '#2980B9', '#1A3BFF', '#FF6600'] #[gw, sms, epv, sv, sw, p, et]
+	if nlay != 1:
+		pal_nlay = ['#E74C3C', ]
+		for i in range(nlay):
+			pal_nlay.append(pal[1])
+			pal_nlay.append(pal[2])
+			pal_nlay.append(pal[3])
+		pal_nlay.append(pal[4])
+		
 
 	def disPlot(elem):
 		plt.figure(dpi=dDPI)
@@ -36,16 +44,58 @@ def plot(elem, nts_ll, nts_ul, plotWlev=True, plotPrec=True, plotDis=True, plotB
 		alpha=alpha_scatter, s=scatter_size)
 		plt.legend(loc='best', fontsize='small')
 		plt.tight_layout()
-		plt.xticks(range(nts_ll,nts_ul,24*30))
+		plt.xticks(range(nts_ll,nts_ul,tick_res))
 
 	def wlevPlot(elem,gws,sws,sms):
 		plt.figure(dpi=dDPI)
 		plt.xlabel("Time Steps (h)")
 		plt.ylabel("Water Levels (m.a.s.l.)")
-		plt.ylim([bot[-1,elem]-0.5, sws[elem,nts_ll:nts_ul].max()+0.5+top[elem]])
+		plt.ylim([bot[-1,elem]-0.5, np.nanmax(sws[elem,:])+0.5+top[elem]])
 		plt.stackplot(range(nts_ll,nts_ul), gws[elem,nts_ll:nts_ul], sms[elem,nts_ll:nts_ul],\
 		epv[elem,nts_ll:nts_ul]-sms[elem,nts_ll:nts_ul], (np.full(nts_ul-nts_ll,top[elem])-gws[elem,nts_ll:nts_ul])*(1-porosity[elem]),\
 		sws[elem,nts_ll:nts_ul], labels=["Groundwater","Soil Moisture", "Effective Pore Volume", "Soil Volume", "Surface Water"], colors=pal)
+		if plotPrec:
+			p_dom, et_dom = [], []
+			ht = (np.nanmax(sws[elem,:])+0.5+top[elem]) + (bot[-1,elem]-0.5)
+			for ts in range(nts_ul-nts_ll):
+				if p[elem,ts] > et[elem,ts]:
+					p_dom.append(ht)
+					et_dom.append(0)
+				else:
+					et_dom.append(ht)
+					p_dom.append(0)
+			plt.stackplot(range(nts_ll,nts_ul), p_dom, labels=["Precipitation Dominant", ], colors=['#A8EAED'], alpha=0.21)
+			plt.stackplot(range(nts_ll,nts_ul), et_dom, labels=["Evapotranspiration Dominant", ], colors=['#E8A78B'], alpha=0.21)
+		plt.plot(range(nts_ll,nts_ul+1), np.full((nts_ul-nts_ll)+1,top[elem]), color='#502D16', linewidth=0.5, label="Ground Level")
+		plt.plot(range(nts_ll,nts_ul+1), np.full((nts_ul-nts_ll)+1,bot[-1,elem]), color='black', linewidth=0.5, label="Bottom")
+		plt.legend(loc='lower right', fontsize=3)
+		plt.tight_layout()
+		plt.xticks(range(nts_ll-1,nts_ul-1,int((nts_ul-nts_ll)/6)))
+
+
+	def wlevPlot_nlay(elem,gws,sws,sms,epv):
+		plt.figure(dpi=dDPI)
+		plt.xlabel("Time Steps (h)")
+		plt.ylabel("Water Levels (m.a.s.l.)")
+		plt.ylim([bot[-1,elem]-0.5, np.nanmax(sws[elem,1:])+0.5+top[elem]])
+		stack = [gws[elem,nts_ll:nts_ul], ]
+		for l in range(nlay-1,-1,-1):
+			sv, epv_l, sm = [], [], []
+			for t in range(nts_ll, nts_ul, 1):
+				sm.append(sms[l][elem,t])
+				epv_l.append(epv[l][elem,t]-sms[l][elem,t])
+				if l == 0:
+					sv.append(max((top[elem] - max(bot[l,elem], gws[elem][t]))*(1-porosity[elem]),0))
+				else:
+					sv.append(max((bot[l-1,elem] - max(bot[l,elem], gws[elem][t]))*(1-porosity[elem]),0))
+			stack.append(sm)
+			stack.append(epv_l)
+			stack.append(sv)
+		stack.append(sws[elem,nts_ll:nts_ul])
+
+		plt.stackplot(range(nts_ll,nts_ul), stack, \
+			labels=["Groundwater","Soil Moisture", "Effective Pore Volume", "Soil Volume", "Surface Water"], colors=pal_nlay)
+		
 		if plotPrec:
 			p_dom, et_dom = [], []
 			ht = (sws[elem,:].max()+0.5+top[elem]) + (bot[-1,elem]-0.5)
@@ -79,7 +129,10 @@ def plot(elem, nts_ll, nts_ul, plotWlev=True, plotPrec=True, plotDis=True, plotB
 			plt.savefig(os.path.join(fig_path,"discharges."+format), format=format, dpi=pDPI)
 
 	if plotWlev:
-		wlevPlot(0,gws,sws,sms)
+		if nlay == 1:
+			wlevPlot(elem,gws,sws,sms)
+		else:
+			wlevPlot_nlay(elem,gws,sws,sms,epv)
 		if savefig:
 			plt.savefig(os.path.join(fig_path,"water_levels."+format), format=format, dpi=pDPI)
 
@@ -168,11 +221,44 @@ GWSWEX.init('/home/gwswex_dev/gwswex_multilay/gwswex.yml')
 
 GWSWEX.run(gw_ini, sw_ini)
 
+### FOR MULTILAYERED SM PLOTS ###
 gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
 sws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-sms = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-epv = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-GWSWEX.pass_vars(gws, sws, sms, epv)
+sms = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
+epv = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
 
-plot(0, 1, Gnts+1, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
+GWSWEX.pass_vars_nlay(gws, sws, sms, epv)
+
+plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
+
+### FOR SINGLE LAYERED SM PLOTS ###
+# gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+# sws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+# sms = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+# epv = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+# GWSWEX.pass_vars(gws, sws, sms, epv)
+# plot(0, 1, Gnts+1, nlay=1, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
+
+
+# %%
+
+gw_dis, sw_dis, uz_dis, qdiff = np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F')
+GWSWEX.pass_dis(gw_dis, uz_dis, sw_dis, qdiff)
+
+# plt.figure()
+# plt.plot(qdiff[0])
+# plt.show()
+
+# for i in range(1,gws.shape[1]):
+#     gw_dis[0][i-1] = (gws[0][i] - gws[0][i-1])*porosity[0]
+#     sw_dis[0][i-1] = sws[0][i] - sws[0][i-1]
+#     sm_dis[0][i-1] = sms[0][i] - sms[0][i-1]
+# qout = gw_dis.sum() + sw_dis.sum() + sm_dis.sum()
+# qin = (p[0].sum() - et[0].sum())*Gdt
+
+# ll=0
+# plt.figure(figsize=(10,5))
+# plt.plot((gw_dis[0][ll:-1]+sw_dis[0][ll:-1]+sm_dis[0][ll:-1]))
+# plt.plot((p[0][ll:-1]-et[0][ll:-1])*Gdt)
+# plt.show()
 # %%

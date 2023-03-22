@@ -86,14 +86,35 @@ MODULE GWSWEX
         gws = GW% Gstorage
         sws = SW% Gstorage
 
-DO e = 1, nelements
-    DO l = 1, UZ% nlay
-        sms(l,e,:) = UZ_(e)% SM(l)% Gstorage(:)
-    END DO
-END DO
-epv = REAL(UZ% Gepvnl, 8)
+        DO e = 1, nelements
+            DO l = 1, UZ% nlay
+                sms(l,e,:) = UZ_(e)% SM(l)% Gstorage(:)
+                ! write(*,*) "SMS", l, UZ_(e)% SM(l)% Gstorage(:)
+            END DO
+        END DO
+        epv = REAL(UZ% Gepvnl, 8)
         ! sms = UZ% Gstorage
         ! epv = UZ% Gepv
     END SUBROUTINE pass_vars_nlay
+
+
+
+    SUBROUTINE pass_dis(gw_dis, uz_dis, sw_dis, qdiff_l) !, qin_l, qout_l
+        USE model, ONLY: GW, SW, UZ, Qdiff, Qin, Qout
+
+        IMPLICIT NONE
+
+        REAL(8), DIMENSION(:,:), INTENT(INOUT) :: gw_dis, uz_dis, sw_dis, qdiff_l
+        ! REAL(8), DIMENSION(:,:), INTENT(INOUT), OPTIONAL :: qin_l, qout_l
+
+        gw_dis = GW% Gdischarge
+        uz_dis = UZ% Gdischarge
+        sw_dis = SW% Gdischarge
+        qdiff_l = Qdiff
+
+        ! IF (PRESENT(qin_l)) qin_l = Qin
+        ! IF (PRESENT(qout_l)) qout_l = Qout
+
+    END SUBROUTINE pass_dis
 
 END MODULE GWSWEX

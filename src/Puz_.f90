@@ -268,26 +268,34 @@ SUBROUTINE resolve(self, e, t, UZ, GW, SW, time, SS)
                     self% gws_bnd_smid = smn
                     CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SM", smn, " is GW bound")
 ! !write(*,*) "here2" 
+! write(*,*) "sm, gw", pSM_% Lstorage(t), GW% Lstorage(e,t)
                     CALL pSM_% vanG% setvars()
 ! !write(*,*) "Rbounds: ", pSM_% RWubound, pSM_% RWlbound
                     pSM_% Lstorage(t) = pSM_% vanG% integrate(pSM_% RWubound, pSM_% RWlbound)
                     CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SMeq = ", pSM_% Lstorage(t))
+
+                    GW% Lstorage(e,t) = GW% Lstorage(e,t) - (pSM_% Lstorage(t) / pSM_% porosity) 
+                    IF (.NOT. GW% Lstorage(e,t) > pSM_% ADlbound) CALL self% resolve(e, t, UZ, GW, SW, time, SS)
+                    CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "GW = ", GW% Lstorage(e,t))
 ! !write(*,*) "here3" 
+! write(*,*) "sm, gw", pSM_% Lstorage(t), GW% Lstorage(e,t)
                     ! iteratively calculate the storage of the layer until the consecutive change storage is within the tolerance
-                    CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "balancing GW-SM storages")
-                    itr = 0
-                    prev_sm_storage = 0.0
-! !write(*,*) "itr = ", itr, "max_iterations", SS% max_iterations
-                    ! #TODO: VERIFY THIS
+!                     CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "balancing GW-SM storages")
+!                     itr = 1
+!                     prev_sm_storage = 0.0
+! ! !write(*,*) "itr = ", itr, "max_iterations", SS% max_iterations
+!                     ! #TODO: VERIFY THIS
 !                     DO WHILE((itr < SS% max_iterations) .AND. (ABS(pSM_% Lstorage(t) - prev_sm_storage) > SS% sm_gw_fluctuation_tolerance))
-! ! !write(*,*) "itr = ", itr
-!                         GW% Lstorage(e,t) = GW% Lstorage(e,t) - (pSM_% Lstorage(t) - prev_sm_storage) / pSM_% porosity
-!                         ! IF (.NOT. GW% Lstorage(e,t) > pSM_% ADlbound) CALL self% resolve(e, t, UZ, GW, SW, time, SS)
+! ! write(*,*) "itr = ", itr, ABS(pSM_% Lstorage(t) - prev_sm_storage)
+! ! write(*,*) "sm, gw", pSM_% Lstorage(t), GW% Lstorage(e,t)
 !                         pSM_% RWlbound = GW% Lstorage(e,t) - MAX(GW% Lstorage(e,t), pSM_% ADlbound)
 !                         pSM_% RWubound = GW% Lstorage(e,t) - pSM_% ADubound
-!                         pSM_% Lstorage(t) = pSM_% vanG% integrate(pSM_% RWubound, pSM_% RWlbound)
 !                         prev_sm_storage = pSM_% Lstorage(t)
+!                         pSM_% Lstorage(t) = pSM_% vanG% integrate(pSM_% RWubound, pSM_% RWlbound)
+!                         GW% Lstorage(e,t) = GW% Lstorage(e,t) - (pSM_% Lstorage(t) - prev_sm_storage) / pSM_% porosity
+!                         IF (.NOT. GW% Lstorage(e,t) > pSM_% ADlbound) CALL self% resolve(e, t, UZ, GW, SW, time, SS)
 !                         itr = itr + 1
+! ! write(*,*) ABS(pSM_% Lstorage(t) - prev_sm_storage)
 !                     END DO
 ! !write(*,*) "here4" 
                     IF(t /= 1) pSM_% Lstorage(t-1) = pSM_% Lstorage(t)
@@ -306,20 +314,23 @@ SUBROUTINE resolve(self, e, t, UZ, GW, SW, time, SS)
                     CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SMeq = ", pSM_% Lstorage(t))
 
                     ! iteratively calculate the storage of the layer until the consecutive change storage is within the tolerance
-                    CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "balancing GW-SM storages")
-                    prev_sm_storage = 0.0
-                    itr = 0
-                    check = (itr < SS% max_iterations) .AND. (ABS(pSM_% Lstorage(t) - prev_sm_storage) > SS% sm_gw_fluctuation_tolerance)
-                    ! #TODO: VERIFY THIS
-                    ! DO WHILE(check)
-                    !     GW% Lstorage(e,t) = GW% Lstorage(e,t) - (pSM_% Lstorage(t) - prev_sm_storage) / pSM_% porosity
-                    !     IF (.NOT. GW% Lstorage(e,t) > pSM_% ADlbound) CALL self% resolve(e, t, UZ, GW, SW, time, SS)
-                    !     pSM_% RWlbound = GW% Lstorage(e,t) - MAX(GW% Lstorage(e,t), pSM_% ADlbound)
-                    !     pSM_% RWubound = GW% Lstorage(e,t) - pSM_% ADubound
-                    !     pSM_% Lstorage(t) = pSM_% vanG% integrate(pSM_% RWubound, pSM_% RWlbound)
-                    !     prev_sm_storage = pSM_% Lstorage(t)
-                    !     itr = itr + 1
-                    ! END DO
+!                     CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "balancing GW-SM storages")
+!                     prev_sm_storage = 0.0
+!                     itr = 1
+!                     ! check = (itr < SS% max_iterations) .AND. (ABS(pSM_% Lstorage(t) - prev_sm_storage) > SS% sm_gw_fluctuation_tolerance)
+!                     ! #TODO: VERIFY THIS
+!                     DO WHILE((itr < SS% max_iterations) .AND. (ABS(pSM_% Lstorage(t) - prev_sm_storage) > SS% sm_gw_fluctuation_tolerance))
+! ! write(*,*) "itr = *", itr, ABS(pSM_% Lstorage(t) - prev_sm_storage)
+! ! write(*,*) "sm, gw", pSM_% Lstorage(t), GW% Lstorage(e,t)
+!                         pSM_% RWlbound = GW% Lstorage(e,t) - MAX(GW% Lstorage(e,t), pSM_% ADlbound)
+!                         pSM_% RWubound = GW% Lstorage(e,t) - pSM_% ADubound
+!                         prev_sm_storage = pSM_% Lstorage(t)
+!                         pSM_% Lstorage(t) = pSM_% vanG% integrate(pSM_% RWubound, pSM_% RWlbound)
+!                         GW% Lstorage(e,t) = GW% Lstorage(e,t) - (pSM_% Lstorage(t) - prev_sm_storage) / pSM_% porosity
+!                         IF (.NOT. GW% Lstorage(e,t) > pSM_% ADlbound) CALL self% resolve(e, t, UZ, GW, SW, time, SS)
+!                         itr = itr + 1
+! ! write(*,*) ABS(pSM_% Lstorage(t) - prev_sm_storage)
+!                     END DO
 
                     pSM_% Lepv = ABS(pSM_% RWubound - pSM_% RWlbound) * pSM_% porosity
                     CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Rbounds: ", pSM_% RWubound, pSM_% RWlbound)

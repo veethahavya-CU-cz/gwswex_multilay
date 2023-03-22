@@ -86,7 +86,7 @@ SUBROUTINE log_real64(self, lv, msg, val, addnl_val)
     END IF
 END SUBROUTINE log_real64
 
-SUBROUTINE log_real128(self, lv, msg, val, addnl_val)
+SUBROUTINE log_real128(self, lv, msg, val, addnl_val1, addnl_val2, addnl_val3)
 ! logs a real value
     USE iso_fortran_env, ONLY: REAL128
 
@@ -95,14 +95,22 @@ SUBROUTINE log_real128(self, lv, msg, val, addnl_val)
     CHARACTER(len=*), INTENT(IN) :: msg
     CHARACTER(len=32) :: buffer
     REAL(REAL128), INTENT(IN) :: val
-    REAL(REAL128), OPTIONAL :: addnl_val
+    REAL(REAL128), OPTIONAL :: addnl_val1, addnl_val2, addnl_val3
 
 
     IF (lv < self% level .OR. lv == self% level) THEN
         self% timer = self% timer% now()
         buffer = "["//TRIM(lv_name(lv))//"] " // "["//TRIM(ADJUSTL(self% timer% strftime("%H:%M:%S")))//"]"
-        IF (PRESENT(addnl_val)) THEN
-            WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val, addnl_val
+        IF (PRESENT(addnl_val1)) THEN
+            IF (PRESENT(addnl_val2)) THEN
+                IF (PRESENT(addnl_val3)) THEN
+                    WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val, addnl_val1, addnl_val2, addnl_val3
+                ELSE
+                    WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val, addnl_val1, addnl_val2
+                ENDIF
+            ELSE
+                WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val, addnl_val1
+            ENDIF
         ELSE
             WRITE(self% unit,*) TRIM(ADJUSTL(buffer)), ": ", msg, val
         ENDIF

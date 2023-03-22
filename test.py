@@ -235,7 +235,12 @@ plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotB
 
 # %%
 
-# gw_dis, sw_dis, sm_dis = np.empty(gws.shape), np.empty(gws.shape), np.empty(gws.shape)
+gw_dis, sw_dis, uz_dis, qdiff = np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F')
+GWSWEX.pass_dis(gw_dis, uz_dis, sw_dis, qdiff)
+
+plt.figure()
+plt.plot(qdiff[0])
+plt.show()
 
 # for i in range(1,gws.shape[1]):
 #     gw_dis[0][i-1] = (gws[0][i] - gws[0][i-1])*porosity[0]
@@ -249,3 +254,4 @@ plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotB
 # plt.plot((gw_dis[0][ll:-1]+sw_dis[0][ll:-1]+sm_dis[0][ll:-1]))
 # plt.plot((p[0][ll:-1]-et[0][ll:-1])*Gdt)
 # plt.show()
+# %%

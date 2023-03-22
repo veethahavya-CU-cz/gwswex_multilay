@@ -364,7 +364,9 @@ SUBROUTINE build(Fyaml_path)
 
 	! #TODO: read [gw_tolerance, sw_tolerance, sm_gw_fluctuation_tolerance]
 	! #TODO: add option under utils to set the number of OMP threads and precision for input files, vars, and output files
-	SS% max_iterations = 10
+ALLOCATE(Qin(nelements, time% Gnts+1), Qout(nelements, time% Gnts+1), Qdiff(nelements, time% Gnts+1))
+ALLOCATE(GW% Gdischarge(nelements, time% Gnts+1), SW% Gdischarge(nelements, time% Gnts+1), UZ% Gdischarge(nelements, time% Gnts+1))
+	SS% max_iterations = 100
 	SS% sm_gw_fluctuation_tolerance = 1.0E-9
 
 	CALL yc_path_files% destroy()
