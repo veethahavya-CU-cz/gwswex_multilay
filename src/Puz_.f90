@@ -100,6 +100,7 @@ SUBROUTINE init(self, e, UZ, GW, time)
         pSM_% vanG => UZ% layer(pSM_% lid)% vanG
         pSM_% ks => UZ% layer(pSM_% lid)% ks(e)
         pSM_% porosity => UZ% layer(pSM_% lid)% porosity(e)
+        ! # FIXME: couple porosity and theta_s of vanG and thus eliminate per element (ks and) porosity declaration
 
         pSM_% ADlbound => UZ% layer(pSM_% lid)% Albound(e)
         pSM_% ADubound => UZ% layer(pSM_% lid)% Aubound(e)

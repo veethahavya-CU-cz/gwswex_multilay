@@ -164,13 +164,13 @@ bot[1] = top - 15
 bot[2] = top - 30
 
 porosity = np.full(elems, pvanGI.theta_s, dtype=np.float64, order='F')
-ks = np.full(elems, 33e-5, dtype=np.float64, order='F')
+ks = np.full(elems, 75e-5, dtype=np.float64, order='F')
 chd = np.full(elems, 0, dtype=int, order='F')
-p = np.full((elems,Gnts+1), 1.5*(1e-3/3600))
-p[:,0:500] = 3.5*(1e-3/3600)
+p = np.full((elems,Gnts+1), 2.5*(1e-3/3600))
+# p[:,0:500] = 3.5*(1e-3/3600)
 p[:,500:750] = 0*(1e-3/3600)
 p[:,1000:1250] = 0*(1e-3/3600)
-p[:,1000:1250] = 0*(1e-3/3600)
+p[:,1250:1750] = 3.5*(1e-3/3600)
 p[:,1750:2000] = 0*(1e-3/3600)
 p[:,2100:Gnts] = 0*(1e-3/3600)
 et = np.full((elems,Gnts+1), 0.33*(1e-3/3600))
@@ -222,22 +222,22 @@ GWSWEX.init('/home/gwswex_dev/gwswex_multilay/gwswex.yml')
 GWSWEX.run(gw_ini, sw_ini)
 
 ### FOR MULTILAYERED SM PLOTS ###
-gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-sws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-sms = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
-epv = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
-
-GWSWEX.pass_vars_nlay(gws, sws, sms, epv)
-
-plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
-
-### FOR SINGLE LAYERED SM PLOTS ###
 # gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
 # sws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-# sms = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-# epv = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-# GWSWEX.pass_vars(gws, sws, sms, epv)
-# plot(0, 1, Gnts+1, nlay=1, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
+# sms = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
+# epv = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
+
+# GWSWEX.pass_vars_nlay(gws, sws, sms, epv)
+
+# plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
+
+### FOR SINGLE LAYERED SM PLOTS ###
+gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+sws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+sms = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+epv = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+GWSWEX.pass_vars(gws, sws, sms, epv)
+plot(0, 1, Gnts+1, nlay=1, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
 
 
 # %%
@@ -245,9 +245,9 @@ plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotB
 gw_dis, sw_dis, uz_dis, qdiff = np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F')
 GWSWEX.pass_dis(gw_dis, uz_dis, sw_dis, qdiff)
 
-# plt.figure()
-# plt.plot(qdiff[0])
-# plt.show()
+plt.figure()
+plt.plot(qdiff[0][1:])
+plt.show()
 
 # for i in range(1,gws.shape[1]):
 #     gw_dis[0][i-1] = (gws[0][i] - gws[0][i-1])*porosity[0]
