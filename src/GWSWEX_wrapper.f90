@@ -1,8 +1,6 @@
 MODULE GWSWEX
 	USE model , ONLY: build, init_ts, solve_e !, resolve_ts
     USE iso_c_binding
-    
-    ! #TODO: WHILE(time% Gts < time% Gnts) run GWSWEX
 
 	IMPLICIT NONE
 

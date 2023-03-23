@@ -4,6 +4,7 @@ function help() {
     echo 'Usage: ./build.sh [-p] [-n]'
     echo ' -p: compile with OpenMP'
     echo ' -n: compile without OpenMP'
+    echo ' -d: compile standalone program for debugging'
     echo ' -h: print this help'
     exit 0
 }
@@ -13,7 +14,7 @@ while getopts ':pndh' opt; do
         p)
             cd src/
             echo '========================================  Compiling GWSWEX fortran module  ========================================' &> ../build.log
-            gfortran -c GWSWEX.f90 \
+            gfortran -c Mtiming.f90 Mpaths.f90 Mlogger.f90 Muz.f90 Msolver.f90 Mstorages.f90 model.f90 \
                 -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
                 -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
                 -fopenmp -Wall -Wno-conversion -Wno-conversion-extra -Wno-tabs -O3 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
@@ -27,7 +28,7 @@ while getopts ':pndh' opt; do
                 (f2py3 --verbose -c -m gwswex_wrapper --build-dir f2py_scratch --fcompiler=gnu95 --f90flags='-fopenmp -march=znver2 -mtune=znver2' --opt='-O3' \
                     -I. -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
                     -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
-                    GWSWEX.o GWSWEX_wrapper.f90) >>../build.log 2>&1
+                    Mtiming.o Mpaths.o Mlogger.o Muz.o Msolver.o Mstorages.o model.o GWSWEX_wrapper.f90) >>../build.log 2>&1
                     if [ $? -eq 0 ]; then
                         echo $'========================================  Successfully compiled GWSWEX python wrapper  ======================================== \n\n\n' >> ../build.log
                         (rm -f ../libs/*.so 2>/dev/null && mv gwswex_wrapper*.so ../libs/ 2>/dev/null) \
@@ -51,7 +52,7 @@ while getopts ':pndh' opt; do
         n)
             cd src/
             echo '========================================  Compiling GWSWEX fortran module  ========================================' &> ../build.log
-            gfortran -c GWSWEX.f90 \
+            gfortran -c Mtiming.f90 Mpaths.f90 Mlogger.f90 Muz.f90 Msolver.f90 Mstorages.f90 model.f90 \
                 -L/usr/local/lib/ -lfgsl -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
                 -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
                 -Wall -Wno-conversion -Wno-conversion-extra -Wno-tabs -O3 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
@@ -65,7 +66,7 @@ while getopts ':pndh' opt; do
                 (f2py3 --verbose -c -m gwswex_wrapper --build-dir f2py_scratch --fcompiler=gnu95 --f90flags='-march=znver2 -mtune=znver2' --opt='-O3' \
                     -I. -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
                     -L/usr/local/lib/ -lfgsl -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
-                    GWSWEX.o GWSWEX_wrapper.f90) >>../build.log 2>&1
+                    Mtiming.o Mpaths.o Mlogger.o Muz.o Msolver.o Mstorages.o model.o GWSWEX_wrapper.f90) >>../build.log 2>&1
                     if [ $? -eq 0 ]; then
                         echo $'========================================  Successfully compiled GWSWEX python wrapper  ======================================== \n\n\n' >> ../build.log
                         (rm -f ../libs/*.so 2>/dev/null && mv gwswex_wrapper*.so ../libs/ 2>/dev/null) \
@@ -89,7 +90,7 @@ while getopts ':pndh' opt; do
         d)
             cd src/
             echo '========================================  Compiling GWSWEX fortran module  ========================================' &> ../build.log
-            gfortran -c GWSWEX.f90 -g -fbacktrace -fcheck=all \
+            gfortran -c Mtiming.f90 Mpaths.f90 Mlogger.f90 Muz.f90 Msolver.f90 Mstorages.f90 model.f90 -g -fbacktrace -fcheck=all \
                 -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
                 -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
                 -fopenmp -Wall -Wno-conversion -Wno-conversion-extra -Wno-tabs -O3 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
@@ -100,7 +101,7 @@ while getopts ':pndh' opt; do
                 echo '========================================  Compiling GWSWEX debugger  ========================================' >> ../build.log
                 export LDFLAGS=-Wl,-rpath=../libs/
                 export NPY_DISTUTILS_APPEND_FLAGS=1
-                (gfortran GWSWEX.o ../testGWSWEX.f90 -o GWSWEX_debugger -g -fopenmp -march=znver2 -mtune=znver2 -O3 \
+                (gfortran Mtiming.o Mpaths.o Mlogger.o Muz.o Msolver.o Mstorages.o model.o ../testGWSWEX.f90 -o GWSWEX_debugger -g -fopenmp -march=znver2 -mtune=znver2 -O3 \
                     -I. -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
                     -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime) >>../build.log 2>&1
                     if [ $? -eq 0 ]; then
@@ -133,7 +134,7 @@ done
 if (( $OPTIND == 1 )); then
 	cd src/
     echo '========================================  Compiling GWSWEX fortran module  ========================================' &> ../build.log
-    gfortran -c GWSWEX.f90 \
+    gfortran -c Mtiming.f90 Mpaths.f90 Mlogger.f90 Muz.f90 Msolver.f90 Mstorages.f90 model.f90 \
         -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
         -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
         -fopenmp -Wall -Wno-conversion -Wno-conversion-extra -Wno-tabs -O3 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
@@ -147,7 +148,7 @@ if (( $OPTIND == 1 )); then
         (f2py3 --verbose -c -m gwswex_wrapper --build-dir f2py_scratch --fcompiler=gnu95 --f90flags='-fopenmp -march=znver2 -mtune=znver2' --opt='-O3' \
             -I. -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
             -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
-            GWSWEX.o GWSWEX_wrapper.f90) >>../build.log 2>&1
+            Mtiming.o Mpaths.o Mlogger.o Muz.o Msolver.o Mstorages.o model.o GWSWEX_wrapper.f90) >>../build.log 2>&1
             if [ $? -eq 0 ]; then
                 echo $'========================================  Successfully compiled GWSWEX python wrapper  ======================================== \n\n\n' >> ../build.log
                 (rm -f ../libs/*.so 2>/dev/null && mv gwswex_wrapper*.so ../libs/ 2>/dev/null) \

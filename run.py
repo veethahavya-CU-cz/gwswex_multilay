@@ -222,22 +222,22 @@ GWSWEX.init('/home/gwswex_dev/gwswex_multilay/gwswex.yml')
 GWSWEX.run(gw_ini, sw_ini)
 
 ### FOR MULTILAYERED SM PLOTS ###
-# gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-# sws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-# sms = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
-# epv = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
-
-# GWSWEX.pass_vars_nlay(gws, sws, sms, epv)
-
-# plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
-
-### FOR SINGLE LAYERED SM PLOTS ###
 gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
 sws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-sms = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-epv = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-GWSWEX.pass_vars(gws, sws, sms, epv)
-plot(0, 1, Gnts+1, nlay=1, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
+sms = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
+epv = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
+
+GWSWEX.pass_vars_nlay(gws, sws, sms, epv)
+
+plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
+
+### FOR SINGLE LAYERED SM PLOTS ###
+# gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+# sws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+# sms = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+# epv = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+# GWSWEX.pass_vars(gws, sws, sms, epv)
+# plot(0, 1, Gnts+1, nlay=1, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
 
 
 # %%
