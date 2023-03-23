@@ -1,9 +1,15 @@
+src/f2py_scratch
+src/.archive
+libs/
+bin/
+runtime/
+
 *.log
 *.so
 *.mod
 *.o
-src/f2py_scratch
-ssrc/.archive
 libs
 *.ip
 *.op
+*.pyc
+*.pyd
