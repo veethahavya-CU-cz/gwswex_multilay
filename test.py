@@ -222,7 +222,7 @@ epv = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
 
 GWSWEX.pass_vars_nlay(gws, sws, sms, epv)
 
-# plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
+plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
 
 ### FOR SINGLE LAYERED SM PLOTS ###
 # gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')

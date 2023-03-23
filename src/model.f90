@@ -1,3 +1,5 @@
+! # ADD: nest all debugging logger calls under ifdef for better performance; ref: https://genomeek.wordpress.com/2012/02/16/using-fortran-preprocessor-1/
+
 MODULE model
     USE iso_fortran_env, ONLY: REAL32, REAL64, REAL128, INT8, INT16, INT32, INT64
     USE Mpaths, ONLY: Cpaths
@@ -12,7 +14,7 @@ MODULE model
     TYPE(Cpaths) :: paths
     TYPE(Clogger), POINTER :: logger
 
-    INTEGER(INT32)  :: nelements !#TODO: add var(s) to store elem id from MF6 and DFM
+    INTEGER(INT32)  :: nelements !#ADD: add var(s) to store elem id from MF6 and DFM
     TYPE(Ctime) :: time
 
     TYPE(Cuz) :: UZ
@@ -258,7 +260,7 @@ CONTAINS
                 READ(tu) UZ% layer(l)% isactive
                 CLOSE (UNIT=tu)
             END IF
-            ! (?) #TODO: check if all underlying layers are active when one layer is declared as active
+            ! (?) #ADD, #PONDER: check if all underlying layers are active when one layer is declared as active
 
             ALLOCATE(UZ% layer(l)% Aubound(nelements), UZ% layer(l)% Albound(nelements))
             IF (l == 1) THEN
@@ -267,7 +269,7 @@ CONTAINS
                 UZ% layer(l)% Aubound => UZ% bot(l-1, :)
             END IF
             UZ% layer(l)% Albound => UZ% bot(l, :)
-            ! #TODO: check if all bots lie below the tops or are at least equal to the top
+            ! #ADD: check if all bots lie below the tops or are at least equal to the top
 
             ! read the vanGenuchten parameters
             vanG_pars = yc_model_domain_lays(l)% value_double_1d("vanG", ires)
@@ -395,7 +397,7 @@ CONTAINS
         CALL yc_model_solver% destroy()
 
         ! #TODO: read [gw_tolerance, sw_tolerance, sm_gw_fluctuation_tolerance]
-        ! #TODO: add option under utils to set the number of OMP threads and precision for input files, vars, and output files
+        ! #ADD: add option under utils to set the number of OMP threads and precision for input files, vars, and output files
         ALLOCATE(Qin(nelements, time% Gnts+1), Qout(nelements, time% Gnts+1), Qdiff(nelements, time% Gnts+1))
         ALLOCATE(GW% Gdischarge(nelements, time% Gnts+1), SW% Gdischarge(nelements, time% Gnts+1), UZ% Gdischarge(nelements, time% Gnts+1))
         SS% max_iterations = 100
@@ -441,7 +443,8 @@ CONTAINS
         TYPE(Csm), POINTER :: pSM_
 
         LOGICAL :: chk
-        !#TODO: rethink auto advance and keep only first_run flag (and add option to set SM ini too)?
+
+        !#TODO, #PONDER: rethink auto advance and keep only first_run flag (and add option to set SM ini too)?
         ! advance the global timestep and deallocate the local storages, epvs, and discharges from the previous timestep
         IF(auto_advance) THEN
             time% Gts = time% Gts + 1
@@ -639,7 +642,7 @@ CONTAINS
                     pSM_% exf_cap = pSM_% vanG% kUS(theta, pSM_% ks) * dt
 
                     IF(P /= 0.0) THEN
-                        pSM_% IC = MIN(MAX(pSM_% IC + pSM_% inf_cap, 0.0), ABS(pSM_% RWubound - pSM_% RWlbound))
+                        pSM_% IC = MIN(MAX(pSM_% IC + pSM_% inf_cap, 0.0), ABS(pSM_% RWubound - pSM_% RWlbound)) ! #FIXME, #PONDER: set min IC to something representative of theta_r
                     ELSE
                         pSM_% IC = MIN(MAX(pSM_% IC - pSM_% inf_cap, 0.0), ABS(pSM_% RWubound - pSM_% RWlbound))
                     END IF
@@ -696,7 +699,7 @@ CONTAINS
                 ! END IF
                 CALL logger% log(logger% DEBUG, "SM1, SW = ", pSM_% Lstorage(t), SW% Lstorage(e,t))
 
-                CALL UZ_(e)% solve(e, t, dt, UZ, GW, SW, time, SS, first_run=.TRUE.)
+                CALL UZ_(e)% solve(e, t, dt, UZ, GW, SW, time, SS)
 
                 CALL logger% log(logger% DEBUG, "SM1, ePV = ", pSM_% Lstorage(t), pSM_% Lepv)
 
@@ -709,9 +712,9 @@ CONTAINS
                 CALL logger% log(logger% DEBUG, "GW is ", GW% Lstorage(e,t))
                 ! WRITE(*,*) "in1"
                 CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
-                IF(.NOT. UZ_(e)% isactive) RETURN ! #TODO: calc discharges and then return
+                IF(.NOT. UZ_(e)% isactive) RETURN ! #FIXME: calc discharges and then return
                 ! WRITE(*,*) "out1"
-                CALL UZ_(e)% solve_again(e, t, dt, UZ, GW, SW, time, SS) ! #FIXME: need to transfer SM(gws_bnd_smid) to GW after solve!
+                CALL UZ_(e)% solve_again(e, t, dt, UZ, GW, SW, time, SS)
                 ! write(*,*) "*"
                 pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
                 CALL logger% log(logger% DEBUG, "*GW_inf = ", (pSM_% exfiltration / pSM_% porosity))
@@ -724,9 +727,8 @@ CONTAINS
 
                 ! WRITE(*,*) "in2"
                 CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
-                ! WRITE(*,*) "out2"
-                ! !write(*,*) "here", t
-                ! #TODO: CHECK!!!!!!!!!!
+
+                ! #TODO: replace with UZ_% stabilize_sm_gw() method
                 ! prev_gw_storage = 0.0
                 ! itr = 0
                 ! DO WHILE(ABS(GW% Lstorage(e,t) - prev_gw_storage) > SS% sm_gw_fluctuation_tolerance .AND. itr < SS% max_iterations)
@@ -735,7 +737,7 @@ CONTAINS
                 !     itr = itr + 1
                 !     CALL UZ_(e)% solve_again(e, t, dt, UZ, GW, SW, time, SS)
                 !     CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
-                !     IF(.NOT. UZ_(e)% isactive) RETURN ! #TODO: calc discharges and then return
+                !     IF(.NOT. UZ_(e)% isactive) RETURN ! #NOTE: calc discharges and then return
                 ! END DO
                 ! CALL logger% log(logger% DEBUG, "balanced SM-GW storage with ", itr, " iterations")
                 ! pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
@@ -745,18 +747,14 @@ CONTAINS
                 ! IF(pSM_% Lstorage(t) == pSM_% Lepv) THEN
                 !     GW% Lstorage(e,t) = UZ% top(e)
                 !     CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
-                !     IF(.NOT. UZ_(e)% isactive) RETURN ! #TODO: calc discharges and then return
+                !     IF(.NOT. UZ_(e)% isactive) RETURN ! #NOTE: calc discharges and then return
                 ! END IF
                 !                 CALL logger% log(logger% DEBUG, "GW, UZ = ", GW% Lstorage(e,t), UZ% Lstorage(e,t))
                 ! !write(*,*) "*"
 
                 ! calculate discharges
                 pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
-                ! write(*,*) "calc:", time% Lts, "Ldis"
-                ! write(*,*) "GW(t-1), GW(t)", GW% Lstorage(e,t-1), GW% Lstorage(e,t)
-                ! write(*,*) "GW ADlbounds", pSM_% ADlbound, pSM_% ADubound
-                ! check = ((GW% Lstorage(e,t-1) < pSM_% ADubound .OR. GW% Lstorage(e,t-1) == pSM_% ADubound) .AND. (GW% Lstorage(e,t-1) > pSM_% ADlbound .OR. GW% Lstorage(e,t-1) == pSM_% ADlbound))
-                ! write(*,*) "check", check
+                ! #BUG: not robust; store prev gws_smid and make a generalized GW_dis calc fn
                 IF((GW% Lstorage(e,t-1) < pSM_% ADubound .OR. GW% Lstorage(e,t-1) == pSM_% ADubound) .AND. (GW% Lstorage(e,t-1) > pSM_% ADlbound .OR. GW% Lstorage(e,t-1) == pSM_% ADlbound)) THEN
                     ! write(*,*) "0"
                     GW% Ldischarge(e,t) = (GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) * porosity_gwbnd
@@ -812,19 +810,15 @@ CONTAINS
                     ! IF(ABS(GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) > 0.25) write(*,*) "5", time% Gts, time% Lts, GW% Lstorage(e,t-1), GW% Lstorage(e,t)
                     SW% Lstorage(e,t) = 0.0_REAL128
                     CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
-                    IF(.NOT. UZ_(e)% isactive) CALL solve(e, t, dt, P=0.0_REAL128, ET=0.0_REAL128) ! #TODO: assess if necessary
+                    IF(.NOT. UZ_(e)% isactive) CALL solve(e, t, dt, P=0.0_REAL128, ET=0.0_REAL128) ! #VERIFY: assess if necessary
                 END IF
                 !write(*,*) "GW, SW after ET = ", GW% Lstorage(e,t), SW% Lstorage(e,t)
                 !write(*,*) "UZ status = ", UZ_(e)% isactive
 
                 ! calculate discharges
                 pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
-                ! write(*,*) "*calc:", time% Lts, "Ldis"
-                ! write(*,*) "GW(t-1), GW(t)", GW% Lstorage(e,t-1), GW% Lstorage(e,t)
-                ! write(*,*) "GW ADlbounds", pSM_% ADlbound, pSM_% ADubound
-                ! check = ((GW% Lstorage(e,t-1) < pSM_% ADubound .OR. GW% Lstorage(e,t-1) == pSM_% ADubound) .AND. (GW% Lstorage(e,t-1) > pSM_% ADlbound .OR. GW% Lstorage(e,t-1) == pSM_% ADlbound))
-                ! write(*,*) "check", check
-                ! #FIXME: store prev gws_smid and make a generalized GW_dis calc fn
+
+                ! #BUG: not robust; store prev gws_smid and make a generalized GW_dis calc fn
                 IF((GW% Lstorage(e,t-1) < pSM_% ADubound .OR. GW% Lstorage(e,t-1) == pSM_% ADubound) .AND. (GW% Lstorage(e,t-1) > pSM_% ADlbound .OR. GW% Lstorage(e,t-1) == pSM_% ADlbound)) THEN
                     ! write(*,*) "*0"
                     GW% Ldischarge(e,t) = (GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) * porosity_gwbnd
@@ -897,7 +891,7 @@ CONTAINS
         time% Lts = 1
 
         t = 1
-        ! #TODO: check if resolving UZ here, i.e. changing GW% Lstorage(1) leads to MB calc errors
+        ! #VERIFY: check if resolving UZ here, i.e. changing GW% Lstorage(1) leads to MB calc errors
         CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
         ! !write(*,*) "time% Lnts = ", time% Lnts
 
