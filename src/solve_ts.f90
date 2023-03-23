@@ -305,7 +305,7 @@ SUBROUTINE solve_t(e, lateral_GW_flux, lateral_SW_flux)
     time% Lts = 1
 
     t = 1
- 
+ ! #TODO: check if resolving UZ here, i.e. changing GW% Lstorage(1) leads to MB calc errors
     CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
 ! !write(*,*) "time% Lnts = ", time% Lnts
 
@@ -318,7 +318,7 @@ SUBROUTINE solve_t(e, lateral_GW_flux, lateral_SW_flux)
     GW% Gstorage(e, time% Gts) = GW% Lstorage(e, time% Lnts+1)
     SW% Gstorage(e, time% Gts) = SW% Lstorage(e, time% Lnts+1)
     UZ% Gstorage(e, time% Gts) = UZ% Lstorage(e, time% Lnts+1)
-IF ((GW% Gstorage(e,t-1) - GW% Gstorage(e,t)) > 5) write(*,*) time% Gts
+! IF ((GW% Gstorage(e,t-1) - GW% Gstorage(e,t)) > 5) write(*,*) time% Gts
     DO l = 1, UZ_(e)% nlay
         pSM_ => UZ_(e)% SM(l) 
         IF (UZ_(e)% SM(l)% isactive) THEN

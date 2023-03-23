@@ -144,7 +144,7 @@ nlay = 3
 
 Gdt = 3600
 tstart = datetime(2020, 1, 1, 0, 0, 0)
-tstop = datetime(2020, 1, 2, 0, 0, 0)
+tstop = datetime(2020, 1, 15, 0, 0, 0)
 Gnts = int((tstop-tstart).total_seconds()/Gdt)
 
 @dataclass
@@ -163,10 +163,10 @@ bot[2] = top - 10
 porosity = np.full(elems, pvanGI.theta_s, dtype=np.float64, order='F')
 ks = np.full(elems, 66e-5, dtype=np.float64, order='F')
 chd = np.full(elems, 0, dtype=int, order='F')
-p = np.full((elems,Gnts+1), 75*(1e-3/3600)) #mm/h
+p = np.full((elems,Gnts+1), 6.66*(1e-3/3600)) #mm/h
 p[0,int(Gnts/2):Gnts+1] = 1*(1e-3/3600)
 
-et = np.full((elems,Gnts+1), 33.33*(1e-3/3600))
+et = np.full((elems,Gnts+1), 3.33*(1e-3/3600))
 
 isactive = np.full((nlay, elems), 1, dtype=int, order='F')
 gw_ini = np.array(bot[2] + 3, dtype=np.float64, order='F')
@@ -238,9 +238,9 @@ plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotB
 gw_dis, sw_dis, uz_dis, qdiff = np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F')
 GWSWEX.pass_dis(gw_dis, uz_dis, sw_dis, qdiff)
 
-plt.figure()
-plt.plot(qdiff[0])
-plt.show()
+# plt.figure()
+# plt.plot(qdiff[0])
+# plt.show()
 
 # for i in range(1,gws.shape[1]):
 #     gw_dis[0][i-1] = (gws[0][i] - gws[0][i-1])*porosity[0]

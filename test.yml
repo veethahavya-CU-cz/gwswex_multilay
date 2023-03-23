@@ -3,7 +3,7 @@ model:
     nelements: 1
     dt: 3600
     tstart: 20200101 000000
-    tstop: 20200102 000000
+    tstop: 20200115 000000
     nlay: 3
     top: top.ip
     bot: bot.ip
