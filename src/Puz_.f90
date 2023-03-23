@@ -120,6 +120,9 @@ SUBROUTINE init(self, e, UZ, GW, time)
             pSM_% Gstorage(1) = pSM_% vanG% integrate(pSM_% RWubound, pSM_% RWlbound)
             CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Setting SM_ini. SMeq = ", pSM_% Gstorage(1))
 
+            pSM_% IC = pSM_% vanG% theta_r
+            pSM_% IC_ratio = pSM_% IC / ABS(pSM_% RWubound - pSM_% RWlbound)
+
             UZ% Gstorage(e,1) = UZ% Gstorage(e,1) + pSM_% Gstorage(1)
 
             IF (GW% Gstorage(e,1) > pSM_% ADlbound .OR. GW% Gstorage(e,1) == pSM_% ADlbound) THEN
@@ -224,6 +227,13 @@ SUBROUTINE resolve(self, e, t, UZ, GW, SW, time, SS)
         CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Rbounds: ", pSM_% RWubound, pSM_% RWlbound)
         CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Lstorage = ", pSM_% Lstorage(t))
         CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "ePV = ", pSM_% Lepv)
+
+        DO smn = self% gws_bnd_smid-1, 1, -1
+            pSM_ => self% SM(smn)
+            pSM_% RWubound = GW% Lstorage(e,t) - pSM_% ADubound ! ub = GWS - L_Aub
+            pSM_% RWlbound = GW% Lstorage(e,t) - pSM_% ADlbound ! ub = GWS - L_Alb
+            pSM_% Lepv = ABS(pSM_% RWubound - pSM_% RWlbound) * pSM_% porosity
+        END DO
     END IF
 
     IF (.NOT. check) THEN
@@ -539,9 +549,9 @@ SUBROUTINE solve(self, e, t, dt, UZ, GW, SW, time, SS, first_run)
                 pSM_% inf_cap = pSM_% vanG% kUS((pSM_% Lstorage(t-1) / pSM_% Lepv) * pSM_% porosity, pSM_% ks) * dt
 
                 IF(pSM_prev_% exfiltration > 0.0) THEN
-                    pSM_% IC = MAX(pSM_% IC + pSM_% inf_cap, 0.0)
+                    pSM_% IC = MIN(MAX(pSM_% IC + pSM_% inf_cap, 0.0), ABS(pSM_% RWubound - pSM_% RWlbound))
                 ELSE
-                    pSM_% IC = MAX(pSM_% IC - pSM_% inf_cap, 0.0)
+                    pSM_% IC = MIN(MAX(pSM_% IC - pSM_% inf_cap, 0.0), ABS(pSM_% RWubound - pSM_% RWlbound))
                 END IF
 
                 pSM_% IC_ratio = MIN(1.0, MAX(pSM_% IC / ABS(pSM_% RWubound - pSM_% RWlbound), 0.1))

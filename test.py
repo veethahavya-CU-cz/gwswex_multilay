@@ -161,7 +161,7 @@ bot[1] = top - 3
 bot[2] = top - 10
 
 porosity = np.full(elems, pvanGI.theta_s, dtype=np.float64, order='F')
-ks = np.full(elems, 66e-5, dtype=np.float64, order='F')
+ks = np.full(elems, 66e-3, dtype=np.float64, order='F')
 chd = np.full(elems, 0, dtype=int, order='F')
 p = np.full((elems,Gnts+1), 6.66*(1e-3/3600)) #mm/h
 p[0,int(Gnts/2):Gnts+1] = 1*(1e-3/3600)

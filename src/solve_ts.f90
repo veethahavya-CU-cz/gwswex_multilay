@@ -15,7 +15,7 @@ RECURSIVE SUBROUTINE solve(e, t, dt, P, ET, lateral_GW_flux, lateral_SW_flux)
 
     ! REAL(REAL128), DIMENSION(:,:), POINTER :: pGW, pSW, pUZ
 
-    REAL(REAL128) :: infiltration_deficit, et_sw, excess_precipitation, infiltration_sw, et_deficit, prev_gw_storage, excess_sm, theta
+    REAL(REAL128) :: infiltration_deficit, et_sw, excess_precipitation, infiltration_sw, et_deficit, prev_gw_storage, excess_sm, theta, prev_inf_cap
     INTEGER :: itr
 
     CHARACTER(LEN=STRLEN) :: strbuffer
@@ -45,28 +45,43 @@ RECURSIVE SUBROUTINE solve(e, t, dt, P, ET, lateral_GW_flux, lateral_SW_flux)
 
             CALL logger% log(logger% DEBUG, "SM1, ePV = ", pSM_% Lstorage(t-1), pSM_% Lepv)
 
+
+
+            prev_inf_cap = 0.0_REAL128
+            itr = 1
+
             theta = (pSM_% Lstorage(t-1) / pSM_% Lepv)* pSM_% porosity
             pSM_% inf_cap = pSM_% vanG% kUS(theta, pSM_% ks) * dt
 
             CALL logger% log(logger% DEBUG, "theta, kUS = ", theta, pSM_% vanG% kUS(theta, pSM_% ks))
             CALL logger% log(logger% DEBUG, "theoritical inf_cap = ", pSM_% inf_cap)
 
-            theta = ((pSM_% Lstorage(t-1) + pSM_% inf_cap) / pSM_% Lepv)* pSM_% porosity
-            pSM_% exf_cap = pSM_% vanG% kUS(theta, pSM_% ks) * dt
+            DO WHILE (ABS(pSM_% inf_cap - prev_inf_cap) > SS% sm_gw_fluctuation_tolerance .AND. itr < SS% max_iterations)
 
-            IF(P /= 0.0) THEN
-                pSM_% IC = MAX(pSM_% IC + pSM_% inf_cap, 0.0) ! #TODO: cap to thickness of SM layer?
-            ELSE
-                pSM_% IC = MAX(pSM_% IC - pSM_% inf_cap, 0.0)
-            END IF
-            pSM_% IC_ratio = MIN(1.0, MAX(pSM_% IC / ABS(pSM_% RWubound - pSM_% RWlbound), 0.1))
+                theta = ((pSM_% Lstorage(t-1) + pSM_% inf_cap) / pSM_% Lepv)* pSM_% porosity
+                pSM_% exf_cap = pSM_% vanG% kUS(theta, pSM_% ks) * dt
 
-            CALL pSM_% vanG% setvars()
-            pSM_% EQstorage = pSM_% vanG% integrate(pSM_% RWubound, pSM_% RWlbound) 
-            pSM_% exfiltration = MIN((pSM_% Lstorage(t-1) + pSM_% inf_cap - pSM_% EQstorage) * pSM_% IC_ratio, (pSM_% exf_cap * pSM_% IC_ratio))
+                IF(P /= 0.0) THEN
+                    pSM_% IC = MIN(MAX(pSM_% IC + pSM_% inf_cap, 0.0), ABS(pSM_% RWubound - pSM_% RWlbound))
+                ELSE
+                    pSM_% IC = MIN(MAX(pSM_% IC - pSM_% inf_cap, 0.0), ABS(pSM_% RWubound - pSM_% RWlbound))
+                END IF
+                pSM_% IC_ratio = MIN(1.0, MAX(pSM_% IC / ABS(pSM_% RWubound - pSM_% RWlbound), 0.1))
 
-            pSM_% inf_cap = MIN(pSM_% inf_cap, (pSM_% Lepv - pSM_% Lstorage(t-1) + pSM_% exfiltration))
-            CALL logger% log(logger% DEBUG, "new theta, practical inf_cap = ", theta, pSM_% inf_cap)
+                CALL pSM_% vanG% setvars()
+                pSM_% EQstorage = pSM_% vanG% integrate(pSM_% RWubound, pSM_% RWlbound) 
+                pSM_% exfiltration = MIN((pSM_% Lstorage(t-1) + pSM_% inf_cap - pSM_% EQstorage) * pSM_% IC_ratio, (pSM_% exf_cap * pSM_% IC_ratio))
+
+                pSM_% inf_cap = MIN(pSM_% inf_cap, (pSM_% Lepv - pSM_% Lstorage(t-1) + pSM_% exfiltration))
+                CALL logger% log(logger% DEBUG, "new theta, practical inf_cap = ", theta, pSM_% inf_cap)
+
+                itr = itr + 1
+                prev_inf_cap = pSM_% inf_cap
+
+                theta = (pSM_% Lstorage(t-1) / pSM_% Lepv)* pSM_% porosity
+                pSM_% inf_cap = pSM_% vanG% kUS(theta, pSM_% ks) * dt
+            
+            END DO
 
             pSM_% infiltration = MIN(P, pSM_% inf_cap)
             CALL logger% log(logger% DEBUG, "P, infiltration = ", P, pSM_% infiltration)
