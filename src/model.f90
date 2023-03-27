@@ -29,7 +29,7 @@ MODULE model
 
     TYPE(Csettings) :: SS
 
-    INTEGER, PARAMETER  :: lu=42, tu=99, STRLEN=256
+    INTEGER, PARAMETER  :: lu=42, tu=99, STRLEN=256, CHUNKSIZE=16
 
     REAL(REAL128), DIMENSION(:,:), ALLOCATABLE :: Qin, Qout, Qdiff
 
@@ -409,11 +409,11 @@ CONTAINS
         CALL yc_path_files% destroy()
         CALL yp_model% destroy()
 
-        ! $OMP PARALLEL DO
+        !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(STATIC,CHUNKSIZE)
         DO e = 1, nelements
             CALL UZ_(e)% init(e, UZ, GW, time)
         END DO
-        ! $OMP END PARALLEL DO
+        !$OMP END PARALLEL DO
 
         ALLOCATE(UZ% Gepvnl(UZ% nlay, nelements, time% Gnts+1))
 
@@ -451,7 +451,7 @@ CONTAINS
         IF(auto_advance) THEN
             time% Gts = time% Gts + 1
             DEALLOCATE(GW% Lstorage, UZ% Lstorage, UZ% Lepv, SW% Lstorage, GW% Ldischarge, UZ% Ldischarge, SW% Ldischarge)
-            ! $OMP PARALLEL DO
+            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(STATIC,CHUNKSIZE)
             DO e = 1, nelements
                 DO l = 1, UZ_(e)% nlay
                     IF (UZ_(e)% SM(l)% isactive) THEN
@@ -460,7 +460,7 @@ CONTAINS
                     END IF
                 END DO
             END DO
-            ! $OMP END PARALLEL DO
+            !$OMP END PARALLEL DO
         END IF
 
 
@@ -509,8 +509,9 @@ CONTAINS
             ALLOCATE(GW% Lstorage(nelements, time% Lnts+1), UZ% Lstorage(nelements, time% Lnts+1), UZ% Lepv(nelements, time% Lnts+1), SW% Lstorage(nelements, time% Lnts+1), &
                 GW% Ldischarge(nelements, time% Lnts+1), UZ% Ldischarge(nelements, time% Lnts+1), SW% Ldischarge(nelements, time% Lnts+1))
 
-            ! $OMP PARALLEL DO
+            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(STATIC,CHUNKSIZE)
             DO e = 1, nelements
+                !$OMP CRITICAL
                 DO l = 1, UZ_(e)% gws_bnd_smid
                     IF (UZ_(e)% SM(l)% isactive) THEN
                         pSM_ => UZ_(e)% SM(l)
@@ -528,11 +529,13 @@ CONTAINS
                         CALL logger% log(logger% DEBUG, strbuffer)
                     END IF
                 END DO
+                !$OMP END CRITICAL
             END DO
-            ! $OMP END PARALLEL DO
+            !$OMP END PARALLEL DO
         ELSE
-            ! $OMP PARALLEL DO
+            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(STATIC,CHUNKSIZE)
             DO e = 1, nelements
+                !$OMP CRITICAL
                 DO l = 1, UZ_(e)% nlay
                     IF (UZ_(e)% SM(l)% isactive) THEN
                         pSM_ => UZ_(e)% SM(l)
@@ -546,8 +549,9 @@ CONTAINS
                         CALL logger% log(logger% DEBUG, strbuffer)
                     END IF
                 END DO
+                !$OMP END CRITICAL
             END DO
-            ! $OMP END PARALLEL DO
+            !$OMP END PARALLEL DO
 
         END IF
 
@@ -955,7 +959,7 @@ CONTAINS
         ! PRIVATE types: https://stackoverflow.com/a/15309556/19053317 || https://www.openmp.org/wp-content/uploads/OMP-Users-Monthly-Telecon-20211210.pdf ||
         ! https://fortran-lang.discourse.group/t/newbie-question-use-openmp-with-derived-type/4651/10#:~:text=I%20actually%20don%E2%80%99t,all%20the%20components.
 
-        ! $OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e)
+        !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(STATIC,CHUNKSIZE)
         DO e = 1, nelements
 
             IF(PRESENT(lateral_GW_flux) .AND. PRESENT(lateral_SW_flux)) THEN
@@ -969,7 +973,7 @@ CONTAINS
             END IF
 
         END DO
-        ! $OMP END PARALLEL DO
+        !$OMP END PARALLEL DO
     END SUBROUTINE solve_e
 
 
@@ -982,7 +986,7 @@ CONTAINS
     !     REAL(REAL128) :: GW_residual, SW_residual
     !     INTEGER :: itr
 
-    !     ! $OMP PARALLEL DO PRIVATE(e, t, l, time% scratch_dt, time% scratch_td, lateral_GW_flux, lateral_SW_flux, GW_residual, SW_residual, itr) LASTPRIVATE(time% Lts) &
+    !     !$OMP PARALLEL DO PRIVATE(e, t, l, time% scratch_dt, time% scratch_td, lateral_GW_flux, lateral_SW_flux, GW_residual, SW_residual, itr) LASTPRIVATE(time% Lts) &
     !     !   $OMP & SHARED(GW, SW, UZ, UZ_, EXTF, SS, nelements, paths, logger, time% wall_elapsed, time% elapsed, GWS_ext, SWS_ext, &
     !     !   $OMP & time% Gstart, time% Gstop, time% Gts, time% Gdt, time% Gnts, time% Lstart, time% Lstop, time% Ldt, time% Lnts, time% current, time% wall_start)
     !     DO e = 1, nelements
@@ -1006,7 +1010,7 @@ CONTAINS
     !         END DO
 
     !     END DO
-    !     ! $OMP END PARALLEL DO
+    !     !$OMP END PARALLEL DO
     ! END SUBROUTINE resolve
 
 END MODULE model

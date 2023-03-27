@@ -37,7 +37,7 @@ MODULE Mstorages
         ! to store, access, and manipulate surface-water storage and parameters
         ! storages:											[m] 										{aquifer bottom elevation - ground surface elevation; relative to defined datum, e.g.: masl}
         ! chd (constant head boundary): 					[-] 	[e]									{T/F}
-        LOGICAL, DIMENSION(:), ALLOCATABLE :: chd
+        LOGICAL(KIND=1), DIMENSION(:), ALLOCATABLE :: chd
     END TYPE Cgw
 
     TYPE, EXTENDS(Cstorage) :: Csw

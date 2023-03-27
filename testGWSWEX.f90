@@ -81,7 +81,7 @@ PROGRAM GWSWEX
 
 	IMPLICIT NONE
 
-    CALL init('/home/gwswex_dev/gwswex_multilay/test.yml')
+    CALL init('/home/gwswex_dev/GWSWEX/multilay/test.yml')
 
     CALL run()
 

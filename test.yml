@@ -1,6 +1,6 @@
 model:
   domain:
-    nelements: 1
+    nelements: 10
     dt: 3600
     tstart: 20200101 000000
     tstop: 20200115 000000

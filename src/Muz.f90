@@ -24,7 +24,7 @@ MODULE Muz
     TYPE Clayer
         ! to store, access, and manipulate UZ layer properties
         CHARACTER(LEN=64) :: name
-        LOGICAL, DIMENSION(:), ALLOCATABLE :: isactive
+        LOGICAL(KIND=1), DIMENSION(:), ALLOCATABLE :: isactive
         REAL(REAL64), DIMENSION(:), POINTER :: Aubound, Albound
         TYPE(CvanG), POINTER :: vanG
         REAL(REAL64), DIMENSION(:), POINTER :: ks, porosity

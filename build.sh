@@ -17,7 +17,7 @@ while getopts ':pndh' opt; do
             gfortran -c Mtiming.f90 Mpaths.f90 Mlogger.f90 Muz.f90 Msolver.f90 Mstorages.f90 model.f90 \
                 -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
                 -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
-                -fopenmp -Wall -Wno-conversion -Wno-conversion-extra -Wno-tabs -O3 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
+                -fopenmp -Wall -Wno-conversion -Wno-conversion-extra -Wno-tabs -O3 -ftree-vectorize -frecursive -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
                 >>../build.log 2>&1
             # -pedantic
             if [ $? -eq 0 ]; then
@@ -25,7 +25,7 @@ while getopts ':pndh' opt; do
                 echo '========================================  Compiling GWSWEX python wrapper  ========================================' >> ../build.log
                 export LDFLAGS=-Wl,-rpath=../libs/
                 export NPY_DISTUTILS_APPEND_FLAGS=1
-                (f2py3 --verbose -c -m gwswex_wrapper --build-dir f2py_scratch --fcompiler=gnu95 --f90flags='-fopenmp -march=znver2 -mtune=znver2' --opt='-O3' \
+                (f2py3 --verbose -c -m gwswex_wrapper --build-dir f2py_scratch --fcompiler=gnu95 --f90flags='-fopenmp -march=znver2 -mtune=znver2  -ftree-vectorize -frecursive' --opt='-O3' \
                     -I. -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
                     -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
                     Mtiming.o Mpaths.o Mlogger.o Muz.o Msolver.o Mstorages.o model.o GWSWEX_wrapper.f90) >>../build.log 2>&1

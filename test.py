@@ -6,8 +6,10 @@ from scipy.io import FortranFile
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
+import time
 
 # %%
+start = time.time()
 os.environ['OMP_NUM_THREADS'] = str(psutil.cpu_count(logical = False))
 
 sys.path.append(os.path.abspath('libs/'))
@@ -139,7 +141,7 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 			plt.savefig(os.path.join(fig_path,"mBal."+format), format=format, dpi=pDPI)
 
 # %%
-elems = int(1)
+elems = int(10)
 nlay = 3
 
 Gdt = 3600
@@ -168,7 +170,7 @@ p[0,int(Gnts/2):Gnts+1] = 1*(1e-3/3600)
 
 et = np.full((elems,Gnts+1), 3.33*(1e-3/3600))
 
-isactive = np.full((nlay, elems), 1, dtype=int, order='F')
+isactive = np.full((nlay, elems), True, dtype=bool, order='F')
 gw_ini = np.array(bot[2] + 3, dtype=np.float64, order='F')
 sw_ini = np.array(np.random.default_rng().uniform(0, 1e-2, elems), dtype=np.float64, order='F')
 
@@ -222,7 +224,7 @@ epv = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
 
 GWSWEX.pass_vars_nlay(gws, sws, sms, epv)
 
-plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
+# plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
 
 ### FOR SINGLE LAYERED SM PLOTS ###
 # gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
@@ -255,3 +257,4 @@ GWSWEX.pass_dis(gw_dis, uz_dis, sw_dis, qdiff)
 # plt.plot((p[0][ll:-1]-et[0][ll:-1])*Gdt)
 # plt.show()
 # %%
+print("Ran in ", time.time()-start, " s")

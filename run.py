@@ -6,6 +6,7 @@ from scipy.io import FortranFile
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
+import time
 
 # %%
 os.environ['OMP_NUM_THREADS'] = str(psutil.cpu_count(logical = False))
@@ -142,7 +143,7 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 			plt.savefig(os.path.join(fig_path,"mBal."+format), format=format, dpi=pDPI)
 
 # %%
-elems = int(1)
+elems = int(10)
 nlay = 3
 
 Gnts = int(24*30*6) #one every hour for 6 months
@@ -165,7 +166,7 @@ bot[2] = top - 30
 
 porosity = np.full(elems, pvanGI.theta_s, dtype=np.float64, order='F')
 ks = np.full(elems, 75e-5, dtype=np.float64, order='F')
-chd = np.full(elems, 0, dtype=int, order='F')
+chd = np.full(elems, 0, dtype=bool, order='F')
 p = np.full((elems,Gnts+1), 2.5*(1e-3/3600))
 # p[:,0:500] = 3.5*(1e-3/3600)
 p[:,500:750] = 0*(1e-3/3600)
@@ -175,7 +176,7 @@ p[:,1750:2000] = 0*(1e-3/3600)
 p[:,2100:Gnts] = 0*(1e-3/3600)
 et = np.full((elems,Gnts+1), 0.33*(1e-3/3600))
 
-isactive = np.full((nlay, elems), 1, dtype=int, order='F')
+isactive = np.full((nlay, elems), 1, dtype=bool, order='F')
 gw_ini = np.array(bot[2] + 5, dtype=np.float64, order='F')
 sw_ini = np.array(np.random.default_rng().uniform(0, 1e-2, elems), dtype=np.float64, order='F')
 
@@ -245,9 +246,9 @@ plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotB
 gw_dis, sw_dis, uz_dis, qdiff = np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F')
 GWSWEX.pass_dis(gw_dis, uz_dis, sw_dis, qdiff)
 
-plt.figure()
-plt.plot(qdiff[0][1:])
-plt.show()
+# plt.figure()
+# plt.plot(qdiff[0][1:])
+# plt.show()
 
 # for i in range(1,gws.shape[1]):
 #     gw_dis[0][i-1] = (gws[0][i] - gws[0][i-1])*porosity[0]
