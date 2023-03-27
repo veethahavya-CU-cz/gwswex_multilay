@@ -3,6 +3,7 @@ src/.archive
 libs/
 bin/
 runtime/
+.dependencies/*/
 
 *.log
 *.so

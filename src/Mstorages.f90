@@ -255,7 +255,7 @@ CONTAINS
             pSM_% vanG => UZ% layer(pSM_% lid)% vanG
             pSM_% ks => UZ% layer(pSM_% lid)% ks(e)
             pSM_% porosity => UZ% layer(pSM_% lid)% porosity(e)
-            ! # FIXME: couple porosity and theta_s of vanG and thus eliminate per element (ks and) porosity declaration
+            ! #FIXME, #PONDER: couple porosity and theta_s of vanG and thus eliminate per element (ks and) porosity declaration? OR maintain bimodal porosity?
 
             pSM_% ADlbound => UZ% layer(pSM_% lid)% Albound(e)
             pSM_% ADubound => UZ% layer(pSM_% lid)% Aubound(e)
@@ -276,8 +276,9 @@ CONTAINS
                 pSM_% Gstorage(1) = pSM_% vanG% integrate(pSM_% RWubound, pSM_% RWlbound)
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Setting SM_ini. SMeq = ", pSM_% Gstorage(1))
 
-                pSM_% IC = pSM_% vanG% theta_r ! #FIXME, #PONDER: set min IC to something representative of theta_r
-                pSM_% IC_ratio = pSM_% IC / ABS(pSM_% RWubound - pSM_% RWlbound)
+                pSM_% IC = pSM_% vanG% theta_r ! #FIXME, #PONDER: set min IC to something representative of theta_r (+2: 640, 655)
+                pSM_% IC_ratio =MIN(pSM_% IC / ABS(pSM_% RWubound - pSM_% RWlbound), 0.1)
+                ! #TODO: take min IC_ratio as input parameter #PONDER: could a higher IC-ratio_min act as a proxy for macropore inf? (+2: 644, 661)
 
                 UZ% Gstorage(e,1) = UZ% Gstorage(e,1) + pSM_% Gstorage(1)
 
@@ -604,9 +605,10 @@ CONTAINS
         CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "IC, IC_ratio = ", pSM_% IC, pSM_% IC_ratio)
         CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "exf_cap = ", pSM_% exf_cap)
         CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Lstorage was ", pSM_% Lstorage(t))
-        ! pSM_% IC_ratio = 1.0
-        pSM_% exfiltration = MIN((pSM_% Lstorage(t) - pSM_% EQstorage) * pSM_% IC_ratio, (pSM_% exf_cap * pSM_% IC_ratio)) ! negative exfiltration (i.e. infiltration from underlying layers) is not capped to always allow replenishment of SM until SMeq is reached as it is based on relatively instanteous capilary forces
-        ! , (pSM_% Lstorage(t) - pSM_% EQstorage) #PONDER: allow instantaneus replenishment of SM until SMeq
+
+        pSM_% exfiltration = MIN((pSM_% Lstorage(t) - pSM_% EQstorage) * pSM_% IC_ratio, (pSM_% exf_cap * pSM_% IC_ratio), (pSM_% Lstorage(t) - pSM_% EQstorage))
+        ! negative exfiltration (i.e. infiltration from underlying layers) is not capped to always allow replenishment of SM until SMeq is reached as it is based on relatively instanteous capilary forces
+        ! #VERIFY: compare to original (+3: 669, 739, 786)
 
         pSM_% Lstorage(t) = pSM_% Lstorage(t) - pSM_% exfiltration
 
@@ -651,7 +653,7 @@ CONTAINS
                 pSM_% inf_cap = pSM_% vanG% kUS((pSM_% Lstorage(t-1) / pSM_% Lepv) * pSM_% porosity, pSM_% ks) * dt
 
                 IF(pSM_prev_% exfiltration > 0.0) THEN
-                    pSM_% IC = MIN(MAX(pSM_% IC + pSM_% inf_cap, 0.0), ABS(pSM_% RWubound - pSM_% RWlbound)) ! #FIXME, #PONDER: set min IC to something representative of theta_r
+                    pSM_% IC = MIN(MAX(pSM_% IC + pSM_% inf_cap, 0.0), ABS(pSM_% RWubound - pSM_% RWlbound))
                 ELSE
                     pSM_% IC = MIN(MAX(pSM_% IC - pSM_% inf_cap, 0.0), ABS(pSM_% RWubound - pSM_% RWlbound))
                 END IF
@@ -664,8 +666,8 @@ CONTAINS
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "IC, IC_ratio = ", pSM_% IC, pSM_% IC_ratio)
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "exf_cap = ", pSM_% exf_cap)
 
-                pSM_% exfiltration = MIN((pSM_% Lstorage(t) - pSM_% EQstorage) * pSM_% IC_ratio, (pSM_% exf_cap * pSM_% IC_ratio)) ! negative exfiltration (i.e. infiltration from underlying layers) is not capped to always allow replenishment of SM until SMeq is reached as it is based on relatively instanteous capilary forces
-                ! , (pSM_% Lstorage(t) - pSM_% EQstorage) #PONDER: allow instantaneus replenishment of SM until SMeq
+                pSM_% exfiltration = MIN((pSM_% Lstorage(t) - pSM_% EQstorage) * pSM_% IC_ratio, (pSM_% exf_cap * pSM_% IC_ratio), (pSM_% Lstorage(t) - pSM_% EQstorage))
+                ! negative exfiltration (i.e. infiltration from underlying layers) is not capped to always allow replenishment of SM until SMeq is reached as it is based on relatively instanteous capilary forces
 
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "exfiltration was ", pSM_% exfiltration)
 
@@ -677,7 +679,7 @@ CONTAINS
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Lstorage is ", pSM_% Lstorage(t))
 
                 IF(pSM_% gw_bound) EXIT
-                ! #FIXME: limit exfiltration to (GWS - BOT) * porosity if GWS bnd and GWS - exf < BOT and make appropriate changes in solve()
+                ! #FIXME: limit exfiltration to (GWS - BOT) * porosity if GWS bnd and GWS - exf < BOT and make appropriate changes in solve() (+1: 799)
 
             END IF
         END DO
@@ -733,10 +735,9 @@ CONTAINS
         CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "IC, IC_ratio = ", pSM_% IC, pSM_% IC_ratio)
         CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "exf_cap = ", pSM_% exf_cap)
         CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Lstorage was ", pSM_% Lstorage(t))
-        ! pSM_% IC_ratio = 1.0
-        pSM_% exfiltration = MIN((pSM_% Lstorage(t) - pSM_% EQstorage) * pSM_% IC_ratio, (pSM_% exf_cap * pSM_% IC_ratio)) ! negative exfiltration (i.e. infiltration from underlying layers) is not capped to always allow replenishment of SM until SMeq is reached as it is based on relatively instanteous capilary forces
-        ! #VERIFY: compare to original
-        ! , (pSM_% Lstorage(t) - pSM_% EQstorage) #PONDER: allow instantaneus replenishment of SM until SMeq
+
+        pSM_% exfiltration = MIN((pSM_% Lstorage(t) - pSM_% EQstorage) * pSM_% IC_ratio, (pSM_% exf_cap * pSM_% IC_ratio), (pSM_% Lstorage(t) - pSM_% EQstorage)) 
+        ! negative exfiltration (i.e. infiltration from underlying layers) is not capped to always allow replenishment of SM until SMeq is reached as it is based on relatively instanteous capilary forces
         pSM_% Lstorage(t) = pSM_% Lstorage(t) - pSM_% exfiltration
 
         IF((pSM_% Lstorage(t) > pSM_% Lepv) .AND. (.NOT. pSM_% gw_bound)) THEN
@@ -779,11 +780,12 @@ CONTAINS
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "IC, IC_ratio = ", pSM_% IC, pSM_% IC_ratio)
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "exf_cap = ", pSM_% exf_cap)
 
-                ! pSM_% IC_ratio = 1.0
+
                 pSM_% exf_cap = MAX(pSM_% exf_cap - MAX(pSM_% exfiltration, 0.0), 0.0)
 
-                pSM_% exfiltration = MIN((pSM_% Lstorage(t) - pSM_% EQstorage) * pSM_% IC_ratio, (pSM_% exf_cap * pSM_% IC_ratio)) ! negative exfiltration (i.e. infiltration from underlying layers) is not capped to always allow replenishment of SM until SMeq is reached as it is based on relatively instanteous capilary forces
-                ! , (pSM_% Lstorage(t) - pSM_% EQstorage) #PONDER: allow instantaneus replenishment of SM until SMeq
+                pSM_% exfiltration = MIN((pSM_% Lstorage(t) - pSM_% EQstorage) * pSM_% IC_ratio, (pSM_% exf_cap * pSM_% IC_ratio), (pSM_% Lstorage(t) - pSM_% EQstorage))
+                ! negative exfiltration (i.e. infiltration from underlying layers) is not capped to always allow replenishment of SM until SMeq is reached as it is based on relatively instanteous capilary forces
+
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "exfiltration was ", pSM_% exfiltration)
 
                 IF(pSM_% Lstorage(t) > pSM_% Lepv) pSM_% exfiltration = pSM_% exfiltration + (pSM_% Lstorage(t) - pSM_% Lepv)
@@ -794,7 +796,6 @@ CONTAINS
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Lstorage is ", pSM_% Lstorage(t))
 
                 IF(pSM_% gw_bound) EXIT
-                ! #FIXME: limit exfiltration to (GWS - BOT) * porosity if GWS bnd and GWS - exf < BOT and make appropriate changes in solve()
 
             END IF
         END DO

@@ -1,5 +1,7 @@
 ! # ADD: nest all debugging logger calls under ifdef for better performance; ref: https://genomeek.wordpress.com/2012/02/16/using-fortran-preprocessor-1/
 
+! #FIXME, #HACK: make sure model works for nlay == 1
+
 MODULE model
     USE iso_fortran_env, ONLY: REAL32, REAL64, REAL128, INT8, INT16, INT32, INT64
     USE Mpaths, ONLY: Cpaths
@@ -444,17 +446,10 @@ CONTAINS
 
         LOGICAL :: chk
 
-        !#TODO, #PONDER: rethink auto advance and keep only first_run flag (and add option to set SM ini too)?
+        !#PONDER: rethink auto advance and keep only first_run flag (and add option to set SM ini too)?
         ! advance the global timestep and deallocate the local storages, epvs, and discharges from the previous timestep
         IF(auto_advance) THEN
             time% Gts = time% Gts + 1
-            chk = ALLOCATED(GW% Lstorage)
-            chk = ALLOCATED(UZ% Lstorage)
-            chk = ALLOCATED(UZ% Lepv)
-            chk = ALLOCATED(SW% Lstorage)
-            chk = ALLOCATED(GW% Ldischarge)
-            chk = ALLOCATED(UZ% Ldischarge)
-            chk = ALLOCATED(SW% Ldischarge)
             DEALLOCATE(GW% Lstorage, UZ% Lstorage, UZ% Lepv, SW% Lstorage, GW% Ldischarge, UZ% Ldischarge, SW% Ldischarge)
             ! $OMP PARALLEL DO
             DO e = 1, nelements
@@ -642,7 +637,7 @@ CONTAINS
                     pSM_% exf_cap = pSM_% vanG% kUS(theta, pSM_% ks) * dt
 
                     IF(P /= 0.0) THEN
-                        pSM_% IC = MIN(MAX(pSM_% IC + pSM_% inf_cap, 0.0), ABS(pSM_% RWubound - pSM_% RWlbound)) ! #FIXME, #PONDER: set min IC to something representative of theta_r
+                        pSM_% IC = MIN(MAX(pSM_% IC + pSM_% inf_cap, 0.0), ABS(pSM_% RWubound - pSM_% RWlbound))
                     ELSE
                         pSM_% IC = MIN(MAX(pSM_% IC - pSM_% inf_cap, 0.0), ABS(pSM_% RWubound - pSM_% RWlbound))
                     END IF
@@ -754,7 +749,7 @@ CONTAINS
 
                 ! calculate discharges
                 pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
-                ! #BUG: not robust; store prev gws_smid and make a generalized GW_dis calc fn
+                ! #BUG: not robust; store prev gws_smid and make a generalized GW_dis calc fn (+1: 815); also add lateral GW and SW fluxes in dis calc if present
                 IF((GW% Lstorage(e,t-1) < pSM_% ADubound .OR. GW% Lstorage(e,t-1) == pSM_% ADubound) .AND. (GW% Lstorage(e,t-1) > pSM_% ADlbound .OR. GW% Lstorage(e,t-1) == pSM_% ADlbound)) THEN
                     ! write(*,*) "0"
                     GW% Ldischarge(e,t) = (GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) * porosity_gwbnd
@@ -818,7 +813,6 @@ CONTAINS
                 ! calculate discharges
                 pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
 
-                ! #BUG: not robust; store prev gws_smid and make a generalized GW_dis calc fn
                 IF((GW% Lstorage(e,t-1) < pSM_% ADubound .OR. GW% Lstorage(e,t-1) == pSM_% ADubound) .AND. (GW% Lstorage(e,t-1) > pSM_% ADlbound .OR. GW% Lstorage(e,t-1) == pSM_% ADlbound)) THEN
                     ! write(*,*) "*0"
                     GW% Ldischarge(e,t) = (GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) * porosity_gwbnd
@@ -856,7 +850,10 @@ CONTAINS
         END IF
         ! !write(*,*) "*"
         ! fluxes are negative when mass leaves the element in GWSWEX; i.e. fluxes are negative when the storage in GWSWEX is greater than external storage
-        IF(PRESENT(lateral_GW_flux)) GW% Lstorage(e,t) = GW% Lstorage(e,t) + lateral_GW_flux
+        IF(PRESENT(lateral_GW_flux)) THEN
+            GW% Lstorage(e,t) = GW% Lstorage(e,t) + lateral_GW_flux
+            CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
+        END IF
         IF(PRESENT(lateral_SW_flux)) SW% Lstorage(e,t) = SW% Lstorage(e,t) + lateral_SW_flux
         ! write(*,*) "^"
     END SUBROUTINE solve
@@ -891,13 +888,20 @@ CONTAINS
         time% Lts = 1
 
         t = 1
-        ! #VERIFY: check if resolving UZ here, i.e. changing GW% Lstorage(1) leads to MB calc errors
+        ! #VERIFY: check if resolving UZ here, i.e. changing GW% Lstorage(1) leads to MB calc errors because it may change the GW storage in the first time step, i.e. GW_ini
         CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
         ! !write(*,*) "time% Lnts = ", time% Lnts
 
         DO t = 2, time% Lnts + 1
-            CALL solve(e, t, dt, P, ET)
-            ! !write(*,*) "*"
+            IF(.NOT. (PRESENT(lateral_GW_flux) .AND. PRESENT(lateral_SW_flux))) THEN
+                CALL solve(e, t, dt, P, ET)
+            ELSE IF (PRESENT(lateral_GW_flux) .AND. PRESENT(lateral_SW_flux)) THEN
+                CALL solve(e, t, dt, P, ET, lateral_GW_flux=lateral_GW_flux(time% Gts-1), lateral_SW_flux=lateral_SW_flux(time% Gts-1))
+            ELSE IF (PRESENT(lateral_GW_flux)) THEN
+                CALL solve(e, t, dt, P, ET, lateral_GW_flux=lateral_GW_flux(time% Gts-1))
+            ELSE IF (PRESENT(lateral_SW_flux)) THEN
+                CALL solve(e, t, dt, P, ET, lateral_SW_flux=lateral_SW_flux(time% Gts-1))
+            END IF
         END DO
 
         ! write(*,*) "calc:", time% Gts, "Gdis"
@@ -937,9 +941,11 @@ CONTAINS
 
 
 
-    SUBROUTINE solve_e()
+    SUBROUTINE solve_e(lateral_GW_flux, lateral_SW_flux)
 
         IMPLICIT NONE
+
+        REAL(REAL128), INTENT(IN), DIMENSION(:), OPTIONAL :: lateral_GW_flux, lateral_SW_flux
 
         INTEGER(INT32) :: e
 
@@ -952,7 +958,15 @@ CONTAINS
         ! $OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e)
         DO e = 1, nelements
 
-            CALL solve_t(e)
+            IF(PRESENT(lateral_GW_flux) .AND. PRESENT(lateral_SW_flux)) THEN
+                CALL solve_t(e, lateral_GW_flux=lateral_GW_flux, lateral_SW_flux=lateral_SW_flux)
+            ELSE IF (PRESENT(lateral_GW_flux)) THEN
+                CALL solve_t(e, lateral_GW_flux=lateral_GW_flux)
+            ELSE IF (PRESENT(lateral_SW_flux)) THEN
+                CALL solve_t(e, lateral_SW_flux=lateral_SW_flux)
+            ELSE
+                CALL solve_t(e)
+            END IF
 
         END DO
         ! $OMP END PARALLEL DO

@@ -15,8 +15,8 @@ while getopts ':pndh' opt; do
             cd src/
             echo '========================================  Compiling GWSWEX fortran module  ========================================' &> ../build.log
             gfortran -c Mtiming.f90 Mpaths.f90 Mlogger.f90 Muz.f90 Msolver.f90 Mstorages.f90 model.f90 \
-                -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
                 -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
+                -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
                 -fopenmp -Wall -Wno-conversion -Wno-conversion-extra -Wno-tabs -O3 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
                 >>../build.log 2>&1
             # -pedantic
@@ -53,8 +53,8 @@ while getopts ':pndh' opt; do
             cd src/
             echo '========================================  Compiling GWSWEX fortran module  ========================================' &> ../build.log
             gfortran -c Mtiming.f90 Mpaths.f90 Mlogger.f90 Muz.f90 Msolver.f90 Mstorages.f90 model.f90 \
-                -L/usr/local/lib/ -lfgsl -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
                 -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
+                -L/usr/local/lib/ -lfgsl -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
                 -Wall -Wno-conversion -Wno-conversion-extra -Wno-tabs -O3 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
                  >>../build.log 2>&1
                  # -pedantic
@@ -91,8 +91,8 @@ while getopts ':pndh' opt; do
             cd src/
             echo '========================================  Compiling GWSWEX fortran module  ========================================' &> ../build.log
             gfortran -c Mtiming.f90 Mpaths.f90 Mlogger.f90 Muz.f90 Msolver.f90 Mstorages.f90 model.f90 -g -fbacktrace -fcheck=all \
-                -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
                 -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
+                -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
                 -fopenmp -Wall -Wno-conversion -Wno-conversion-extra -Wno-tabs -O3 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
                 >>../build.log 2>&1
             # -pedantic -fsanitize=address,zero,undefined
@@ -135,8 +135,8 @@ if (( $OPTIND == 1 )); then
 	cd src/
     echo '========================================  Compiling GWSWEX fortran module  ========================================' &> ../build.log
     gfortran -c Mtiming.f90 Mpaths.f90 Mlogger.f90 Muz.f90 Msolver.f90 Mstorages.f90 model.f90 \
-        -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
         -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
+        -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
         -fopenmp -Wall -Wno-conversion -Wno-conversion-extra -Wno-tabs -O3 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
         >>../build.log 2>&1
         # -pedantic

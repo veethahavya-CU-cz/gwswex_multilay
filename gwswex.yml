@@ -38,9 +38,9 @@ model:
     pet_nts: [1, 2, 3, 5, 7, 10, 12]
 paths:
   dirs:
-    root: /home/gwswex_dev/gwswex_multilay
-    input: /home/gwswex_dev/gwswex_multilay/runtime/input
-    output: /home/gwswex_dev/gwswex_multilay/runtime/output
+    root: /home/gwswex_dev/GWSWEX/multilay
+    input: /home/gwswex_dev/GWSWEX/multilay/runtime/input
+    output: /home/gwswex_dev/GWSWEX/multilay/runtime/output
   files:
     DMN.TOP: 1
     DMN.BOT: 1

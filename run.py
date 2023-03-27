@@ -14,7 +14,7 @@ sys.path.append(os.path.abspath('libs/'))
 from gwswex_wrapper import gwswex as GWSWEX
 
 
-Fyaml = create_string_buffer(b'/home/gwswex_dev/gwswex_multilay/gwswex.yml', 256)
+Fyaml = create_string_buffer(b'/home/gwswex_dev/GWSWEX/multilay/gwswex.yml', 256)
 
 # %%
 def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True, plotDis=True, plotBal=True, savefig=True, dDPI=90, pDPI=1600, alpha_scatter=0.7, scatter_size=3, format='jpg'):
@@ -193,21 +193,21 @@ def fread(fname):
 	Ffile.close()
 	return val
 
-ip_path = '/home/gwswex_dev/gwswex_multilay/runtime/input'
-op_path = '/home/gwswex_dev/gwswex_multilay/runtime/output'
+ip_path = '/home/gwswex_dev/GWSWEX/multilay/runtime/input'
+op_path = '/home/gwswex_dev/GWSWEX/multilay/runtime/output'
 
 fwrite('top.ip', top)
 fwrite('bot.ip', bot)
 
 fwrite('l1_active.ip', isactive[0])
 fwrite('l1_ks.ip', ks)
-fwrite('l1_por.ip', porosity)
+fwrite('l1_porosity.ip', porosity)
 fwrite('l2_active.ip', isactive[1])
 fwrite('l2_ks.ip', ks)
-fwrite('l2_por.ip', porosity)
+fwrite('l2_porosity.ip', porosity)
 fwrite('l3_active.ip', isactive[2])
 fwrite('l3_ks.ip', ks)
-fwrite('l3_por.ip', porosity)
+fwrite('l3_porosity.ip', porosity)
 
 fwrite('GW_chd.ip', chd)
 fwrite('GW_ini.ip', gw_ini)
@@ -217,7 +217,7 @@ fwrite('p.ip', p)
 fwrite('et.ip', et)
 
 #%%
-GWSWEX.init('/home/gwswex_dev/gwswex_multilay/gwswex.yml')
+GWSWEX.init('/home/gwswex_dev/GWSWEX/multilay/gwswex.yml')
 
 GWSWEX.run(gw_ini, sw_ini)
 

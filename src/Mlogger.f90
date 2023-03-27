@@ -1,3 +1,4 @@
+! #TODO: nest all logger% debug called within an ifdef
 MODULE Mlogger
 ! handles logging operations
     USE iso_fortran_env, ONLY: REAL32, REAL64, REAL128, INT8, INT16, INT32, INT64
