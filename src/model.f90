@@ -446,7 +446,7 @@ CONTAINS
 
         LOGICAL :: chk
 
-        !#PONDER: rethink auto advance and keep only first_run flag (and add option to set SM ini too)?
+        !#TODO, #PONDER: rethink auto advance and keep only first_run flag (and add option to set SM ini too)?
         ! advance the global timestep and deallocate the local storages, epvs, and discharges from the previous timestep
         IF(auto_advance) THEN
             time% Gts = time% Gts + 1
@@ -505,7 +505,9 @@ CONTAINS
         ! allocate local storages, epvs, and discharges for the current timestep
         CALL logger% log(logger% DEBUG, "Allocating local storages, epvs, and discharges for the current timestep")
 
-        IF(auto_advance .OR. first_run) THEN
+        ! #HACK: this is a hack to allow for the first run to be initialized with the GW and SW ini files #FIXME
+        IF(PRESENT(first_run)) chk = first_run
+        IF(auto_advance .OR. chk) THEN
             ALLOCATE(GW% Lstorage(nelements, time% Lnts+1), UZ% Lstorage(nelements, time% Lnts+1), UZ% Lepv(nelements, time% Lnts+1), SW% Lstorage(nelements, time% Lnts+1), &
                 GW% Ldischarge(nelements, time% Lnts+1), UZ% Ldischarge(nelements, time% Lnts+1), SW% Ldischarge(nelements, time% Lnts+1))
 
@@ -593,7 +595,7 @@ CONTAINS
 
         ! REAL(REAL128), DIMENSION(:,:), POINTER :: pGW, pSW, pUZ
 
-        REAL(REAL128) :: infiltration_deficit, et_sw, excess_precipitation, infiltration_sw, et_deficit, prev_gw_storage, excess_sm, theta, prev_inf_cap
+        REAL(REAL128) :: infiltration_deficit, et_sw, excess_precipitation, infiltration_sw, et_deficit, prev_gw_storage, excess_sm, theta, prev_inf_cap, swdis
         INTEGER :: itr, sgn, l
 
         CHARACTER(LEN=STRLEN) :: strbuffer
@@ -768,6 +770,8 @@ CONTAINS
 
                 ! END IF
                 SW% Ldischarge(e,t) = SW% Lstorage(e,t) - SW% Lstorage(e,t-1)
+                swdis = SW% Ldischarge(e,t)
+                IF(swdis>50) write(*,*) "swdis = ", swdis, time% Gts, time% Lts
                 UZ% Ldischarge(e,t) = UZ% Lstorage(e,t) - UZ% Lstorage(e,t-1)
             ELSE
                 !## case 2: UZ is inactive
@@ -824,6 +828,9 @@ CONTAINS
                 END IF
 
                 SW% Ldischarge(e,t) = SW% Lstorage(e,t) - SW% Lstorage(e,t-1)
+                swdis = SW% Ldischarge(e,t)
+                IF(SW% Lstorage(e,t)>50 .OR. SW% Lstorage(e,t-1)>50) write(*,*) "sws: ", SW% Lstorage(e,t-1), SW% Lstorage(e,t), time% Gts, time% Lts
+                IF(swdis>50) write(*,*) "swdis = ", swdis, time% Gts, time% Lts
                 UZ% Ldischarge(e,t) = UZ% Lstorage(e,t) - UZ% Lstorage(e,t-1)
 
             END IF
@@ -913,6 +920,7 @@ CONTAINS
 
         GW% Gdischarge(e, time% Gts) = SUM(GW% Ldischarge(e, 2:time% Lnts+1))
         SW% Gdischarge(e, time% Gts) = SUM(SW% Ldischarge(e, 2:time% Lnts+1))
+        IF(SW% Gdischarge(e, time% Gts) > 50) write(*,*) "SW discharge > 50: ", time% Gts, time% Lts, SW% Ldischarge
         UZ% Gdischarge(e, time% Gts) = SUM(UZ% Ldischarge(e, 2:time% Lnts+1))
 
         UZ% Gepv(e, time% Gts) = UZ% Lepv(e, time% Lnts+1)

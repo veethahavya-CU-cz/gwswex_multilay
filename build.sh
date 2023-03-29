@@ -93,7 +93,7 @@ while getopts ':pndh' opt; do
             gfortran -c Mtiming.f90 Mpaths.f90 Mlogger.f90 Muz.f90 Msolver.f90 Mstorages.f90 model.f90 -g -fbacktrace -fcheck=all \
                 -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
                 -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime \
-                -fopenmp -Wall -Wno-conversion -Wno-conversion-extra -Wno-tabs -O3 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
+                -fopenmp -Wall -Wno-conversion -Wno-conversion-extra -Wno-tabs -O0 -fPIC -march=znver2 -mtune=znver2 -ffree-line-length-1024\
                 >>../build.log 2>&1
             # -pedantic -fsanitize=address,zero,undefined
             if [ $? -eq 0 ]; then
@@ -101,7 +101,7 @@ while getopts ':pndh' opt; do
                 echo '========================================  Compiling GWSWEX debugger  ========================================' >> ../build.log
                 export LDFLAGS=-Wl,-rpath=../libs/
                 export NPY_DISTUTILS_APPEND_FLAGS=1
-                (gfortran Mtiming.o Mpaths.o Mlogger.o Muz.o Msolver.o Mstorages.o model.o ../testGWSWEX.f90 -o GWSWEX_debugger -g -fopenmp -march=znver2 -mtune=znver2 -O3 \
+                (gfortran Mtiming.o Mpaths.o Mlogger.o Muz.o Msolver.o Mstorages.o model.o ../testGWSWEX.f90 -o GWSWEX_debugger -g -fopenmp -march=znver2 -mtune=znver2 -O0 \
                     -I. -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
                     -L/usr/local/lib/ -lfgsl -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime) >>../build.log 2>&1
                     if [ $? -eq 0 ]; then
