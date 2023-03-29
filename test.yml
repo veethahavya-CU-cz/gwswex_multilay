@@ -1,6 +1,6 @@
 model:
   domain:
-    nelements: 10000
+    nelements: 1
     dt: 3600
     tstart: 20200101 000000
     tstop: 20200115 000000
@@ -54,5 +54,5 @@ paths:
     EXTF.et: 1
 utils:
   logger:
-    level: 0
+    level: 1
     fname: GWSWEX.log

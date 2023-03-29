@@ -1,4 +1,4 @@
-! # ADD: nest all debugging logger calls under ifdef for better performance; ref: https://genomeek.wordpress.com/2012/02/16/using-fortran-preprocessor-1/
+! # TODO: nest all debugging logger calls under ifdef for better performance; ref: https://genomeek.wordpress.com/2012/02/16/using-fortran-preprocessor-1/
 
 ! #FIXME: make sure model works for nlay == 1
 
@@ -29,7 +29,7 @@ MODULE model
 
     TYPE(Csettings) :: SS
 
-    INTEGER, PARAMETER  :: lu=42, tu=99, STRLEN=256, CHUNKSIZE=16
+    INTEGER, PARAMETER  :: lu=42, tu=99, STRLEN=256, CHUNKSIZE=INT(10000/8) ! set chunksize to nelements/nprocs
 
     REAL(REAL128), DIMENSION(:,:), ALLOCATABLE :: Qin, Qout, Qdiff
 
@@ -262,7 +262,7 @@ CONTAINS
                 READ(tu) UZ% layer(l)% isactive
                 CLOSE (UNIT=tu)
             END IF
-            ! (?) #ADD, #PONDER: check if all underlying layers are active when one layer is declared as active
+            ! #ADD, #PONDER: check if all underlying layers are active when one layer is declared as active
 
             ALLOCATE(UZ% layer(l)% Aubound(nelements), UZ% layer(l)% Albound(nelements))
             IF (l == 1) THEN
@@ -399,7 +399,7 @@ CONTAINS
         CALL yc_model_solver% destroy()
 
         ! #TODO: read [gw_tolerance, sw_tolerance, sm_gw_fluctuation_tolerance]
-        ! #ADD: add option under utils to set the number of OMP threads and precision for input files, vars, and output files
+        ! #ADD: add option under utils to set the number of OMP threads, OMP type, chunksize, and precision for input files, vars, and output files
         ALLOCATE(Qin(nelements, time% Gnts+1), Qout(nelements, time% Gnts+1), Qdiff(nelements, time% Gnts+1))
         ALLOCATE(GW% Gdischarge(nelements, time% Gnts+1), SW% Gdischarge(nelements, time% Gnts+1), UZ% Gdischarge(nelements, time% Gnts+1))
         SS% max_iterations = 100
@@ -409,7 +409,7 @@ CONTAINS
         CALL yc_path_files% destroy()
         CALL yp_model% destroy()
 
-        !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(STATIC,CHUNKSIZE)
+        !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(DYNAMIC)
         DO e = 1, nelements
             CALL UZ_(e)% init(e, UZ, GW, time)
         END DO
@@ -451,7 +451,7 @@ CONTAINS
         IF(auto_advance) THEN
             time% Gts = time% Gts + 1
             DEALLOCATE(GW% Lstorage, UZ% Lstorage, UZ% Lepv, SW% Lstorage, GW% Ldischarge, UZ% Ldischarge, SW% Ldischarge)
-            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(STATIC,CHUNKSIZE)
+            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(DYNAMIC)
             DO e = 1, nelements
                 DO l = 1, UZ_(e)% nlay
                     IF (UZ_(e)% SM(l)% isactive) THEN
@@ -509,7 +509,7 @@ CONTAINS
             ALLOCATE(GW% Lstorage(nelements, time% Lnts+1), UZ% Lstorage(nelements, time% Lnts+1), UZ% Lepv(nelements, time% Lnts+1), SW% Lstorage(nelements, time% Lnts+1), &
                 GW% Ldischarge(nelements, time% Lnts+1), UZ% Ldischarge(nelements, time% Lnts+1), SW% Ldischarge(nelements, time% Lnts+1))
 
-            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(STATIC,CHUNKSIZE)
+            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(DYNAMIC)
             DO e = 1, nelements
                 !$OMP CRITICAL
                 DO l = 1, UZ_(e)% gws_bnd_smid
@@ -533,7 +533,7 @@ CONTAINS
             END DO
             !$OMP END PARALLEL DO
         ELSE
-            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(STATIC,CHUNKSIZE)
+            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(DYNAMIC)
             DO e = 1, nelements
                 !$OMP CRITICAL
                 DO l = 1, UZ_(e)% nlay
@@ -757,9 +757,9 @@ CONTAINS
                         pSM_ => UZ_(e)% SM(l)
 
                         IF(sgn == -1) THEN
-                            GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MAX(GW% Lstorage(e,t), pSM_% ADlbound) - MIN(GW% Lstorage(e,t-1), pSM_% ADubound))
+                            GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MAX(GW% Lstorage(e,t), pSM_% ADlbound) - MIN(GW% Lstorage(e,t-1), pSM_% ADubound)) * pSM_% porosity
                         ELSE
-                            GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MIN(GW% Lstorage(e,t), pSM_% ADubound) - MAX(GW% Lstorage(e,t-1), pSM_% ADlbound))
+                            GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MIN(GW% Lstorage(e,t), pSM_% ADubound) - MAX(GW% Lstorage(e,t-1), pSM_% ADlbound)) * pSM_% porosity
                         END IF
                         
                         CALL logger% log(logger% DEBUG, "GW_dis = ", GW% Ldischarge(e,t))
@@ -814,9 +814,9 @@ CONTAINS
                         pSM_ => UZ_(e)% SM(l)
 
                         IF(sgn == -1) THEN
-                            GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MAX(GW% Lstorage(e,t), pSM_% ADlbound) - MIN(GW% Lstorage(e,t-1), pSM_% ADubound))
+                            GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MAX(GW% Lstorage(e,t), pSM_% ADlbound) - MIN(GW% Lstorage(e,t-1), pSM_% ADubound)) * pSM_% porosity
                         ELSE
-                            GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MIN(GW% Lstorage(e,t), pSM_% ADubound) - MAX(GW% Lstorage(e,t-1), pSM_% ADlbound))
+                            GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MIN(GW% Lstorage(e,t), pSM_% ADubound) - MAX(GW% Lstorage(e,t-1), pSM_% ADlbound)) * pSM_% porosity
                         END IF
                         
                         CALL logger% log(logger% DEBUG, "GW_dis = ", GW% Ldischarge(e,t))
@@ -942,7 +942,7 @@ CONTAINS
         ! PRIVATE types: https://stackoverflow.com/a/15309556/19053317 || https://www.openmp.org/wp-content/uploads/OMP-Users-Monthly-Telecon-20211210.pdf ||
         ! https://fortran-lang.discourse.group/t/newbie-question-use-openmp-with-derived-type/4651/10#:~:text=I%20actually%20don%E2%80%99t,all%20the%20components.
 
-        !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(STATIC,CHUNKSIZE)
+        !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(DYNAMIC)
         DO e = 1, nelements
 
             IF(PRESENT(lateral_GW_flux) .AND. PRESENT(lateral_SW_flux)) THEN

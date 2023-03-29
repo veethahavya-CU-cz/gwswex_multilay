@@ -37,11 +37,11 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 		plt.figure(dpi=dDPI)
 		plt.xlabel("Time Steps")
 		plt.ylabel("Discharges in Storage")
-		plt.scatter(range(nts_ll,nts_ul), gw_dis[elem,:], label="GW_dis", color=pal[0],\
+		plt.scatter(range(nts_ll,nts_ul), gw_dis[elem,1:], label="GW_dis", color=pal[0],\
 		alpha=alpha_scatter, s=scatter_size)
-		plt.scatter(range(nts_ll,nts_ul), sm_dis[elem,:], label="SM_dis", color=pal[1],\
+		plt.scatter(range(nts_ll,nts_ul), uz_dis[elem,1:], label="SM_dis", color=pal[1],\
 		alpha=alpha_scatter, s=scatter_size)
-		plt.scatter(range(nts_ll,nts_ul), sw_dis[elem,:], label="SW_dis", color=pal[4],\
+		plt.scatter(range(nts_ll,nts_ul), sw_dis[elem,1:], label="SW_dis", color=pal[4],\
 		alpha=alpha_scatter, s=scatter_size)
 		plt.legend(loc='best', fontsize='small')
 		plt.tight_layout()
@@ -117,10 +117,10 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 
 	def balPlot():
 		plt.figure(dpi=dDPI)
-		ind = np.random.choice(Qdiff.shape[0], 1, replace=False)[0]
+		ind = np.random.choice(qdiff.shape[0], 1, replace=False)[0]
 		plt.xlabel("Time Steps")
-		plt.ylabel("Mass Balance Error (Total = {:.2g})".format(Qdiff[ind].sum()))
-		plt.plot(Qdiff[ind], "r")
+		plt.ylabel("Mass Balance Error (Total = {:.2g})".format(qdiff[ind].sum()))
+		plt.plot(qdiff[ind], "r")
 		plt.tight_layout()
 		plt.xticks(range(nts_ll,nts_ul,24*30))
 
@@ -246,9 +246,9 @@ plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotB
 gw_dis, sw_dis, uz_dis, qdiff = np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F')
 GWSWEX.pass_dis(gw_dis, uz_dis, sw_dis, qdiff)
 
-plt.figure()
-plt.plot(qdiff.sum(axis=0))
-plt.savefig(os.path.join(op_path,'figs',"mBal."+'png'), format='png', dpi=1600)
+# plt.figure()
+# plt.plot(qdiff.sum(axis=0))
+# plt.savefig(os.path.join(op_path,'figs',"mBal."+'png'), format='png', dpi=1600)
 # plt.show()
 
 uzs = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
@@ -258,6 +258,8 @@ influx = (p.sum())*Gdt - (et.sum())*Gdt
 delta_storages = (uzs[:,-1]-uzs[0,0]).sum() + ((gws[:,-1]-gws[:,0])*pvanGI.theta_s).sum() + (sws[:,-1]-sws[:,0]).sum()
 print("mbal err: {:.2e}".format(influx-delta_storages))
 print("mbal err %: {:.2e}".format((influx-delta_storages)/influx))
+
+plot(0, 1, Gnts+1, nlay=nlay, plotWlev=False, plotPrec=False, plotDis=True, plotBal=True, savefig=True) #True False
 
 # for i in range(1,gws.shape[1]):
 #     gw_dis[0][i-1] = (gws[0][i] - gws[0][i-1])*porosity[0]
@@ -270,5 +272,5 @@ print("mbal err %: {:.2e}".format((influx-delta_storages)/influx))
 # plt.figure(figsize=(10,5))
 # plt.plot((gw_dis[0][ll:-1]+sw_dis[0][ll:-1]+sm_dis[0][ll:-1]))
 # plt.plot((p[0][ll:-1]-et[0][ll:-1])*Gdt)
-# plt.show()
+plt.show()
 # %%

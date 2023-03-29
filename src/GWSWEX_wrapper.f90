@@ -107,7 +107,7 @@ MODULE GWSWEX
         gw_dis = GW% Gdischarge
         uz_dis = UZ% Gdischarge
         sw_dis = SW% Gdischarge
-        qdiff_l = Qdiff
+        qdiff_l = Qin - Qout
 
         ! IF (PRESENT(qin_l)) qin_l = Qin
         ! IF (PRESENT(qout_l)) qout_l = Qout
