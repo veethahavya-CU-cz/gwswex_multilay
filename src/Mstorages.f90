@@ -265,7 +265,7 @@ CONTAINS
             IF (GW% Gstorage(e,1) < pSM_% ADubound) THEN
                 ! activate the layer if the GW storage is less than the Aubound of the layer i.e. GWS lies in or under the layer
                 IF(smn == 1) check = .TRUE.
-                CALL activate(pSM_, sm1=check)
+                IF(.NOT. pSM_% isactive) CALL activate(pSM_, sm1=check)
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SM ", smn, " is active")
 
                 ! calculate the relative bounds for SMeq calculation
@@ -445,7 +445,7 @@ CONTAINS
                 DO smn = self% gws_bnd_smid+1, self% nlay
                     pSM_ => self% SM(smn)
 
-                    CALL activate(pSM_, nts=time% Lnts, sm1=(smn == 1))
+                    IF(.NOT. pSM_% isactive) CALL activate(pSM_, nts=time% Lnts, sm1=(smn == 1))
                     CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SM", smn, " is active. Allocating SM vars")
 
                     pSM_% RWubound = GW% Lstorage(e,t) - pSM_% ADubound ! ub = GWS - L_Aub

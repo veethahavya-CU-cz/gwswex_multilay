@@ -220,8 +220,8 @@ curr_time = datetime.utcfromtimestamp(GWSWEX.get_curr_time_unix())
 
 gws_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
 sws_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
-uzs_l = np.empty((nlay, elems, Lnts), dtype=np.float64, order='F')
-epv_l = np.empty((nlay, elems, Lnts), dtype=np.float64, order='F')
+uzs_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
+epv_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
 GWSWEX.grab_result('gws_l', gws_l)
 GWSWEX.grab_result('sws_l', sws_l)
 GWSWEX.grab_result('uzs_l', uzs_l)
@@ -243,8 +243,8 @@ while(curr_time < tstop):
 
     gws_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
     sws_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
-    uzs_l = np.empty((nlay, elems, Lnts), dtype=np.float64, order='F')
-    epv_l = np.empty((nlay, elems, Lnts), dtype=np.float64, order='F')
+    uzs_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
+    epv_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
     GWSWEX.grab_result('gws_l', gws_l)
     GWSWEX.grab_result('sws_l', sws_l)
     GWSWEX.grab_result('uzs_l', uzs_l)
@@ -258,6 +258,25 @@ while(curr_time < tstop):
     GWSWEX.grab_result('uz_dis_l', uz_dis)
 
     print("Solved until: ", curr_time, "Lnts = ", Lnts)
+    print("gws_l = ", gws_l[0], "\nsws_l = ", sws_l[0], "\nuzs_l = ", uzs_l[0])
+
+    print("Simulating external discharges...")
+    gws_ext = gws_l + np.random.randn(Lnts)*1e-2
+    sws_ext = sws_l + abs(np.random.randn(Lnts))*1e-5
+    print("gws_ext = ", gws_ext[0], "\nsws_ext = ", sws_ext[0])
+
+    print("Updating external discharges...")
+    GWSWEX.resolve(gws_ext, sws_ext)
+
+    gws_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
+    sws_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
+    uzs_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
+    GWSWEX.grab_result('gws_l', gws_l)
+    GWSWEX.grab_result('sws_l', sws_l)
+    GWSWEX.grab_result('uzs_l', uzs_l)
+
+    print("gws_l = ", gws_l[0], "\nsws_l = ", sws_l[0], "\nuzs_l = ", uzs_l[0])
+
 
 
 ### FOR MULTILAYERED SM PLOTS ###
@@ -266,7 +285,7 @@ sws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
 sms = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
 epv = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
 GWSWEX.pass_vars_nlay(gws, sws, sms, epv)
-plot(0, 0, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
+plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
 
 ### FOR SINGLE LAYERED SM PLOTS ###
 # gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')

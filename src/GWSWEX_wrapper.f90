@@ -136,15 +136,18 @@ MODULE GWSWEX
     END SUBROUTINE run
 
 
-    ! SUBROUTINE resolve(GWS_ext, SWS_ext)
-    !     USE model, ONLY: resolve_ts
 
-    !     IMPLICIT NONE
+    SUBROUTINE resolve(GWS_ext, SWS_ext)
+        USE model, ONLY: resolve_l
 
-    !     REAL(8), DIMENSION(:,:), INTENT(INOUT) :: GWS_ext, SWS_ext
+        IMPLICIT NONE
 
-    !     CALL resolve_ts(GWS_ext, SWS_ext)
-    ! END SUBROUTINE resolve
+        REAL(8), DIMENSION(:,:), INTENT(IN) :: GWS_ext, SWS_ext
+
+        CALL resolve_l(GWS_ext, SWS_ext)
+    END SUBROUTINE resolve
+
+
 
     SUBROUTINE pass_vars(gws, sws, sms, epv)
         USE model, ONLY: GW, SW, UZ
