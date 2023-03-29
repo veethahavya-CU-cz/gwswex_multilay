@@ -141,7 +141,7 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 			plt.savefig(os.path.join(fig_path,"mBal."+format), format=format, dpi=pDPI)
 
 # %%
-elems = int(1)
+elems = int(10000)
 nlay = 3
 
 Gdt = 3600

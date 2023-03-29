@@ -87,7 +87,6 @@ MODULE GWSWEX
         DO e = 1, nelements
             DO l = 1, UZ% nlay
                 sms(l,e,:) = UZ_(e)% SM(l)% Gstorage(:)
-                ! write(*,*) "SMS", l, UZ_(e)% SM(l)% Gstorage(:)
             END DO
         END DO
         epv = REAL(UZ% Gepvnl, 8)
