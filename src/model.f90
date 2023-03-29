@@ -13,21 +13,21 @@ MODULE model
 
     IMPLICIT NONE
 
-    TYPE(Cpaths) :: paths
+    TYPE(Cpaths), ALLOCATABLE :: paths
     TYPE(Clogger), POINTER :: logger
 
-    INTEGER(INT32)  :: nelements !#ADD: add var(s) to store elem id from MF6 and DFM
-    TYPE(Ctime) :: time
+    INTEGER(INT32), ALLOCATABLE  :: nelements !#ADD: add var(s) to store elem id from MF6 and DFM
+    TYPE(Ctime), ALLOCATABLE :: time
 
-    TYPE(Cuz) :: UZ
-    TYPE(Cgw) :: GW
-    TYPE(Csw) :: SW
+    TYPE(Cuz), ALLOCATABLE :: UZ
+    TYPE(Cgw), ALLOCATABLE :: GW
+    TYPE(Csw), ALLOCATABLE :: SW
 
     TYPE(Cuz_), DIMENSION(:), ALLOCATABLE :: UZ_
 
-    TYPE(Cext_forcings) :: EXTF
+    TYPE(Cext_forcings), ALLOCATABLE :: EXTF
 
-    TYPE(Csettings) :: SS
+    TYPE(Csettings), ALLOCATABLE :: SS
 
     INTEGER, PARAMETER  :: lu=42, tu=99, STRLEN=256, CHUNKSIZE=INT(10000/8) ! set chunksize to nelements/nprocs
 
@@ -50,8 +50,6 @@ CONTAINS
 
         IMPLICIT NONE
 
-        ! INTEGER, PARAMETER  :: STRLEN=256
-
         CHARACTER(LEN=*), INTENT(IN) :: Fyaml_path
 
         TYPE(YAMLHandler) :: fyaml
@@ -68,10 +66,11 @@ CONTAINS
         REAL(REAL64), DIMENSION(:,:), ALLOCATABLE :: r64temp2d
         INTEGER(INT8) :: i8temp
 
-        time% wall_start = time% wall_start% now()
+        ALLOCATE(paths, time, nelements, UZ, GW, SW, EXTF, SS)
+
+        ! time% wall_start = time% wall_start% now()
 
         paths% config = TRIM(Fyaml_path)
-
 
         ! start reading the yaml file
         fyaml = yaml_open_file(Fyaml_path)
@@ -505,13 +504,14 @@ CONTAINS
         ! allocate local storages, epvs, and discharges for the current timestep
         CALL logger% log(logger% DEBUG, "Allocating local storages, epvs, and discharges for the current timestep")
 
-        IF(auto_advance .OR. first_run) THEN
+        chk = .FALSE.
+        IF (PRESENT(first_run)) chk = first_run
+
+        IF(auto_advance .OR. chk) THEN
             ALLOCATE(GW% Lstorage(nelements, time% Lnts+1), UZ% Lstorage(nelements, time% Lnts+1), UZ% Lepv(nelements, time% Lnts+1), SW% Lstorage(nelements, time% Lnts+1), &
                 GW% Ldischarge(nelements, time% Lnts+1), UZ% Ldischarge(nelements, time% Lnts+1), SW% Ldischarge(nelements, time% Lnts+1))
-
             !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(DYNAMIC)
             DO e = 1, nelements
-                !$OMP CRITICAL
                 DO l = 1, UZ_(e)% gws_bnd_smid
                     IF (UZ_(e)% SM(l)% isactive) THEN
                         pSM_ => UZ_(e)% SM(l)
@@ -529,13 +529,11 @@ CONTAINS
                         CALL logger% log(logger% DEBUG, strbuffer)
                     END IF
                 END DO
-                !$OMP END CRITICAL
             END DO
             !$OMP END PARALLEL DO
         ELSE
             !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(DYNAMIC)
             DO e = 1, nelements
-                !$OMP CRITICAL
                 DO l = 1, UZ_(e)% nlay
                     IF (UZ_(e)% SM(l)% isactive) THEN
                         pSM_ => UZ_(e)% SM(l)
@@ -549,10 +547,8 @@ CONTAINS
                         CALL logger% log(logger% DEBUG, strbuffer)
                     END IF
                 END DO
-                !$OMP END CRITICAL
             END DO
             !$OMP END PARALLEL DO
-
         END IF
 
         ! set local storage to the global storage of last dt (or initial conditions for first dt)
@@ -995,5 +991,14 @@ CONTAINS
     !     END DO
     !     !$OMP END PARALLEL DO
     ! END SUBROUTINE resolve
+
+
+
+    SUBROUTINE fin()
+
+        DEALLOCATE(paths, time, nelements, UZ, GW, SW, EXTF, SS)
+        CALL logger% log(logger% INFO, "Deallocated memory. Exiting...")
+
+    END SUBROUTINE fin
 
 END MODULE model

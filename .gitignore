@@ -9,8 +9,10 @@ runtime/
 *.so
 *.mod
 *.o
-libs
 *.ip
 *.op
 *.pyc
 *.pyd
+*.jpg
+*.png
+*.svg

@@ -8,14 +8,14 @@ from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import time
 
-# %%
+
 start = time.time()
 os.environ['OMP_NUM_THREADS'] = str(psutil.cpu_count(logical = False))
 
 sys.path.append(os.path.abspath('libs/'))
 from gwswex_wrapper import gwswex as GWSWEX
 
-# %%
+
 def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True, plotDis=True, plotBal=True, savefig=True, dDPI=90, pDPI=1600, alpha_scatter=0.7, scatter_size=3, format='jpg'):
 	#formats = jpg, svg, png, jpg
 	fig_path = os.path.join(op_path, 'figs/')
@@ -35,11 +35,11 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 		plt.figure(dpi=dDPI)
 		plt.xlabel("Time Steps")
 		plt.ylabel("Discharges in Storage")
-		plt.scatter(range(nts_ll,nts_ul), gw_dis[elem,1:], label="GW_dis", color=pal[0],\
+		plt.scatter(range(nts_ll,nts_ul), gw_dis[elem,nts_ll:nts_ul], label="GW_dis", color=pal[0],\
 		alpha=alpha_scatter, s=scatter_size)
-		plt.scatter(range(nts_ll,nts_ul), uz_dis[elem,1:], label="SM_dis", color=pal[1],\
+		plt.scatter(range(nts_ll,nts_ul), uz_dis[elem,nts_ll:nts_ul], label="SM_dis", color=pal[1],\
 		alpha=alpha_scatter, s=scatter_size)
-		plt.scatter(range(nts_ll,nts_ul), sw_dis[elem,1:], label="SW_dis", color=pal[4],\
+		plt.scatter(range(nts_ll,nts_ul), sw_dis[elem,nts_ll:nts_ul], label="SW_dis", color=pal[4],\
 		alpha=alpha_scatter, s=scatter_size)
 		plt.legend(loc='best', fontsize='small')
 		plt.tight_layout()
@@ -140,7 +140,7 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 		if savefig:
 			plt.savefig(os.path.join(fig_path,"mBal."+format), format=format, dpi=pDPI)
 
-# %%
+
 elems = int(1)
 nlay = 3
 
@@ -174,7 +174,7 @@ isactive = np.full((nlay, elems), True, dtype=bool, order='F')
 gw_ini = np.array(bot[2] + 3, dtype=np.float64, order='F')
 sw_ini = np.array(np.random.default_rng().uniform(0, 1e-2, elems), dtype=np.float64, order='F')
 
-#%%
+
 def fwrite(fname, val):
 
 	Ffile = FortranFile(os.path.join(ip_path,fname), 'w')
@@ -214,17 +214,59 @@ fwrite('et.ip', et)
 #%%
 GWSWEX.init('/home/gwswex_dev/GWSWEX/multilay/test.yml', gw_ini, sw_ini)
 
-GWSWEX.run()
+Lnts = GWSWEX.get_lnts()
+Gts = GWSWEX.get_gts()
+curr_time = datetime.utcfromtimestamp(GWSWEX.get_curr_time_unix())
+
+gws_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
+sws_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
+uzs_l = np.empty((nlay, elems, Lnts), dtype=np.float64, order='F')
+epv_l = np.empty((nlay, elems, Lnts), dtype=np.float64, order='F')
+GWSWEX.grab_result('gws_l', gws_l)
+GWSWEX.grab_result('sws_l', sws_l)
+GWSWEX.grab_result('uzs_l', uzs_l)
+GWSWEX.grab_result('epv_l', epv_l)
+
+gw_dis = np.empty((elems, Lnts), dtype=np.float64, order='F')
+sw_dis = np.empty((elems, Lnts), dtype=np.float64, order='F')
+uz_dis = np.empty((elems, Lnts), dtype=np.float64, order='F')
+GWSWEX.grab_result('gw_dis_l', gw_dis)
+GWSWEX.grab_result('sw_dis_l', sw_dis)
+GWSWEX.grab_result('uz_dis_l', uz_dis)
+
+while(curr_time < tstop):
+    GWSWEX.update(auto_advance=True)
+
+    Lnts = GWSWEX.get_lnts()
+    Gts = GWSWEX.get_gts()
+    curr_time = datetime.utcfromtimestamp(GWSWEX.get_curr_time_unix())
+
+    gws_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
+    sws_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
+    uzs_l = np.empty((nlay, elems, Lnts), dtype=np.float64, order='F')
+    epv_l = np.empty((nlay, elems, Lnts), dtype=np.float64, order='F')
+    GWSWEX.grab_result('gws_l', gws_l)
+    GWSWEX.grab_result('sws_l', sws_l)
+    GWSWEX.grab_result('uzs_l', uzs_l)
+    GWSWEX.grab_result('epv_l', epv_l)
+
+    gw_dis = np.empty((elems, Lnts), dtype=np.float64, order='F')
+    sw_dis = np.empty((elems, Lnts), dtype=np.float64, order='F')
+    uz_dis = np.empty((elems, Lnts), dtype=np.float64, order='F')
+    GWSWEX.grab_result('gw_dis_l', gw_dis)
+    GWSWEX.grab_result('sw_dis_l', sw_dis)
+    GWSWEX.grab_result('uz_dis_l', uz_dis)
+
+    print("Solved until: ", curr_time, "Lnts = ", Lnts)
+
 
 ### FOR MULTILAYERED SM PLOTS ###
 gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
 sws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
 sms = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
 epv = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
-
 GWSWEX.pass_vars_nlay(gws, sws, sms, epv)
-
-plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
+plot(0, 0, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
 
 ### FOR SINGLE LAYERED SM PLOTS ###
 # gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
@@ -232,40 +274,21 @@ plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotB
 # sms = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
 # epv = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
 # GWSWEX.pass_vars(gws, sws, sms, epv)
-# plot(0, 1, Gnts+1, nlay=1, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
-
-
-# %%
+# plot(0, 1, Gnts+1, nlay=1, plotWlev=True, plotPrec=True, plotDis=True, plotBal=True, savefig=True) #True False
 
 gw_dis, sw_dis, uz_dis, qdiff = np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F')
 GWSWEX.pass_dis(gw_dis, uz_dis, sw_dis, qdiff)
 
-# plt.figure()
-# plt.plot(qdiff.sum(axis=0))
-# plt.savefig(os.path.join(op_path,'figs',"mBal."+'png'), format='png', dpi=1600)
-# plt.show()
-
 uzs = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
 epv = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
 GWSWEX.pass_vars(gws, sws, uzs, epv)
+
 influx = (p.sum())*Gdt - (et.sum())*Gdt
 delta_storages = (uzs[:,-1]-uzs[0,0]).sum() + ((gws[:,-1]-gws[:,0])*pvanGI.theta_s).sum() + (sws[:,-1]-sws[:,0]).sum()
+
 print("mbal err: {:.2e}".format(influx-delta_storages))
 print("mbal err %: {:.2e}".format((influx-delta_storages)/influx))
 
 plot(0, 1, Gnts+1, nlay=nlay, plotWlev=False, plotPrec=False, plotDis=True, plotBal=True, savefig=True) #True False
 
-# for i in range(1,gws.shape[1]):
-#     gw_dis[0][i-1] = (gws[0][i] - gws[0][i-1])*porosity[0]
-#     sw_dis[0][i-1] = sws[0][i] - sws[0][i-1]
-#     sm_dis[0][i-1] = sms[0][i] - sms[0][i-1]
-# qout = gw_dis.sum() + sw_dis.sum() + sm_dis.sum()
-# qin = (p[0].sum() - et[0].sum())*Gdt
-
-# ll=0
-# plt.figure(figsize=(10,5))
-# plt.plot((gw_dis[0][ll:-1]+sw_dis[0][ll:-1]+sm_dis[0][ll:-1]))
-# plt.plot((p[0][ll:-1]-et[0][ll:-1])*Gdt)
-# plt.show()
-# %%
-print("Ran in ", time.time()-start, " s")
+GWSWEX.finalize()

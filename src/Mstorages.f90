@@ -92,6 +92,8 @@ MODULE Mstorages
     END TYPE Cuz_
 
     TYPE Cext_forcings
+    ! #TODO: add option to specify whether the forcings are spatially distributed or not
+    ! #ADD: option to specify whether the forcings are spatially distributed or not
         ! to store, access, and manipulate external forcings
         ! p (precipitation): 								[m/s]										{ - }
         ! et (evapotranspiration): 							[m/s]										{ - }

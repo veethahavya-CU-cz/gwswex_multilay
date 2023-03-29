@@ -1,6 +1,5 @@
 MODULE GWSWEX
 	USE model , ONLY: build, init_ts, solve_e !, resolve_ts
-    USE iso_c_binding
 
 	IMPLICIT NONE
 
@@ -8,11 +7,13 @@ MODULE GWSWEX
 
     CONTAINS
     
-    SUBROUTINE init(config_path)
+    SUBROUTINE init(config_path, gw_ini, sw_ini)
 
         IMPLICIT NONE
 
         CHARACTER(LEN=*), INTENT(IN) :: config_path
+        REAL(8), DIMENSION(:), INTENT(IN) :: gw_ini, sw_ini
+
         CHARACTER(LEN=STRLEN) :: Fyaml_path
 
         Fyaml_path = TRIM(ADJUSTL(config_path))
@@ -20,25 +21,112 @@ MODULE GWSWEX
 
         CALL build(TRIM(Fyaml_path))
 
-    END SUBROUTINE init
-
-
-
-    SUBROUTINE run(gw_ini, sw_ini)
-    USE model, ONLY: init_ts, solve_e, time
-
-        IMPLICIT NONE
-
-        REAL(8), DIMENSION(:), INTENT(INOUT), OPTIONAL :: gw_ini, sw_ini
-
         CALL init_ts(gw_ini=gw_ini, sw_ini=sw_ini, auto_advance=.FALSE., first_run=.TRUE.)
 
         CALL solve_e()
 
-        ! DO WHILE(time% Gts < 12)
-        !     CALL init_ts(auto_advance=.TRUE.)
-        !     CALL solve_ts()
-        ! END DO
+    END SUBROUTINE init
+
+
+
+
+    FUNCTION get_Lnts() RESULT(Lnts)
+        USE model, ONLY: time
+
+        IMPLICIT NONE
+
+        INTEGER :: Lnts
+
+        Lnts = time% Lnts
+    END FUNCTION get_Lnts
+
+
+    FUNCTION get_Gts() RESULT(Gts)
+        USE model, ONLY: time
+
+        IMPLICIT NONE
+
+        INTEGER :: Gts
+
+        Gts = time% Gts
+    END FUNCTION get_Gts
+
+
+    FUNCTION get_curr_time_unix() RESULT(unix_time)
+        USE model, ONLY: time
+
+        IMPLICIT NONE
+
+        INTEGER :: unix_time
+
+        unix_time = time% current% secondsSinceEpoch()
+    END FUNCTION get_curr_time_unix
+
+
+
+    SUBROUTINE grab_result(code, result)
+        USE model, ONLY: GW, SW, UZ, UZ_
+
+        IMPLICIT NONE
+
+        CHARACTER(LEN=*), INTENT(IN) :: code
+        REAL(8), DIMENSION(:,:), INTENT(INOUT) :: result
+
+        SELECT CASE(code)
+            CASE('gws_l')
+                result = GW % Lstorage(:,2:)
+            CASE('gws_g')
+                result = GW % Gstorage(:,2:)
+            CASE('gw_dis_l')
+                result = GW % Ldischarge(:,2:)
+            CASE('gw_dis_g')
+                result = GW % Gdischarge(:,2:)
+            CASE('sws_l')
+                result = SW % Lstorage(:,2:)
+            CASE('sws_g')
+                result = SW % Gstorage(:,2:)
+            CASE('sw_dis_l')
+                result = SW % Ldischarge(:,2:)
+            CASE('sw_dis_g')
+                result = SW % Gdischarge(:,2:)
+            CASE('uzs_l')
+                result = UZ % Lstorage(:,2:)
+            CASE('uzs_g')
+                result = UZ % Gstorage(:,2:)
+            CASE('uz_dis_l')
+                result = UZ % Ldischarge(:,2:)
+            CASE('uz_dis_g')
+                result = UZ % Gdischarge(:,2:)
+            CASE('epv_l')
+                result = UZ % Lepv(:,2:)
+            CASE('epv_g')
+                result = UZ % Gepv(:,2:)
+            CASE DEFAULT
+                WRITE(*,*) 'UNKNOWN CODE: ', code
+                result(:,:) = 0.0
+        END SELECT
+    END SUBROUTINE grab_result
+
+
+
+
+    SUBROUTINE update(auto_advance)
+        USE model, ONLY: init_ts, solve_e, time
+
+        IMPLICIT NONE
+
+        LOGICAL(1), INTENT(IN) :: auto_advance
+
+        CALL init_ts(auto_advance=LOGICAL(auto_advance, KIND=4))
+        CALL solve_e()
+    END SUBROUTINE update
+
+
+
+    SUBROUTINE run()
+    USE model, ONLY: init_ts, solve_e, time
+
+        IMPLICIT NONE
 
         DO WHILE(time% Gts < time% Gnts .OR. time% Gts == time% Gnts)
             CALL init_ts(auto_advance=.TRUE.)
@@ -113,5 +201,15 @@ MODULE GWSWEX
         ! IF (PRESENT(qout_l)) qout_l = Qout
 
     END SUBROUTINE pass_dis
+
+
+
+    SUBROUTINE finalize()
+        USE model, ONLY: fin
+
+        CALL fin()
+
+    END SUBROUTINE finalize
+
 
 END MODULE GWSWEX
