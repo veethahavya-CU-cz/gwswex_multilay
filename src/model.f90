@@ -753,7 +753,7 @@ CONTAINS
                     sgn = SIGN(1_INT8, UZ_(e)% prev_gws_bnd_smid - UZ_(e)% gws_bnd_smid)
                     GW% Ldischarge(e,t) = 0.0_REAL128
 
-                    DO l = UZ_(e)% prev_gws_bnd_smid, UZ_(e)% gws_bnd_smid, sgn
+                    DO l = UZ_(e)% prev_gws_bnd_smid, UZ_(e)% gws_bnd_smid, -sgn
                         pSM_ => UZ_(e)% SM(l)
 
                         IF(sgn == -1) THEN
@@ -810,7 +810,7 @@ CONTAINS
                     sgn = SIGN(1_INT8, UZ_(e)% prev_gws_bnd_smid - UZ_(e)% gws_bnd_smid)
                     GW% Ldischarge(e,t) = 0.0_REAL128
 
-                    DO l = UZ_(e)% prev_gws_bnd_smid, UZ_(e)% gws_bnd_smid, sgn
+                    DO l = UZ_(e)% prev_gws_bnd_smid, UZ_(e)% gws_bnd_smid, -sgn
                         pSM_ => UZ_(e)% SM(l)
 
                         IF(sgn == -1) THEN
@@ -912,7 +912,7 @@ CONTAINS
         END DO
 
         GW% Gdischarge(e, time% Gts) = SUM(GW% Ldischarge(e, 2:time% Lnts+1))
-        SW% Gdischarge(e, time% Gts) = SUM(SW% Ldischarge(e, 2:time% Lnts+1))
+        SW% Gdischarge(e, time% Gts) = SW% Gstorage(e, time% Gts) - SW% Gstorage(e, time% Gts-1) ! #HACK: to avoid mysterious error in SW% Gdischarge calc. where SW% Gdischarge == GW% Gstorage(t-1) even though SW% Ldischarge is calcd properly
         UZ% Gdischarge(e, time% Gts) = SUM(UZ% Ldischarge(e, 2:time% Lnts+1))
 
         UZ% Gepv(e, time% Gts) = UZ% Lepv(e, time% Lnts+1)
