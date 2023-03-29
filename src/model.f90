@@ -404,7 +404,7 @@ CONTAINS
         ALLOCATE(GW% Gdischarge(nelements, time% Gnts+1), SW% Gdischarge(nelements, time% Gnts+1), UZ% Gdischarge(nelements, time% Gnts+1))
         SS% max_iterations = 100
         SS% sm_gw_fluctuation_tolerance = 1.0E-9
-        SS% stabalize_sm_gw = .TRUE.
+        SS% stabalize_sm_gw = .FALSE.
 
         CALL yc_path_files% destroy()
         CALL yp_model% destroy()
@@ -595,7 +595,7 @@ CONTAINS
         ! REAL(REAL128), DIMENSION(:,:), POINTER :: pGW, pSW, pUZ
 
         REAL(REAL128) :: infiltration_deficit, et_sw, excess_precipitation, infiltration_sw, et_deficit, prev_gw_storage, excess_sm, theta, prev_inf_cap
-        INTEGER :: itr
+        INTEGER :: itr, sgn, l
 
         CHARACTER(LEN=STRLEN) :: strbuffer
         LOGICAL :: check
@@ -753,30 +753,31 @@ CONTAINS
 
                 ! calculate discharges
                 pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
-                ! #BUG: not robust; store prev gws_smid and make a generalized GW_dis calc fn (+1: 815); also add lateral GW and SW fluxes in dis calc if present
                 IF((GW% Lstorage(e,t-1) < pSM_% ADubound .OR. GW% Lstorage(e,t-1) == pSM_% ADubound) .AND. (GW% Lstorage(e,t-1) > pSM_% ADlbound .OR. GW% Lstorage(e,t-1) == pSM_% ADlbound)) THEN
-                    ! write(*,*) "0"
-                    GW% Ldischarge(e,t) = (GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) * porosity_gwbnd
-                ELSE IF(GW% Lstorage(e,t-1) > pSM_% ADubound) THEN
-                    ! GW was in the upper layer
-                    ! write(*,*) "+1"
-                    GW% Ldischarge(e,t) = (pSM_% ADubound - GW% Lstorage(e,t-1)) * UZ_(e)% SM(UZ_(e)% gws_bnd_smid - 1)% porosity + &
-                        (GW% Lstorage(e,t) - pSM_% ADubound) * porosity_gwbnd
-                ELSE IF(GW% Lstorage(e,t-1) < pSM_% ADlbound) THEN
-                    ! GW is in the lower layer
-                    ! write(*,*) "-1"
-                    GW% Ldischarge(e,t) = (pSM_% ADlbound - GW% Lstorage(e,t-1)) * UZ_(e)% SM(UZ_(e)% gws_bnd_smid + 1)% porosity + &
-                        (GW% Lstorage(e,t) - pSM_% ADlbound) * porosity_gwbnd
+                    GW% Ldischarge(e,t) = (GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) * pSM_% porosity
+                ELSE
+                    sgn = SIGN(1_INT8, UZ_(e)% prev_gws_bnd_smid - UZ_(e)% gws_bnd_smid)
+                    GW% Ldischarge(e,t) = 0.0_REAL128
+
+                    DO l = UZ_(e)% prev_gws_bnd_smid, UZ_(e)% gws_bnd_smid, sgn
+                        pSM_ => UZ_(e)% SM(l)
+
+                        IF(sgn == -1) THEN
+                            GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MAX(GW% Lstorage(e,t), pSM_% ADlbound) - MIN(GW% Lstorage(e,t-1), pSM_% ADubound))
+                        ELSE
+                            GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MIN(GW% Lstorage(e,t), pSM_% ADubound) - MAX(GW% Lstorage(e,t-1), pSM_% ADlbound))
+                        END IF
+                        
+                        CALL logger% log(logger% DEBUG, "GW_dis = ", GW% Ldischarge(e,t))
+                    END DO
                 END IF
+
+                ! END IF
                 SW% Ldischarge(e,t) = SW% Lstorage(e,t) - SW% Lstorage(e,t-1)
                 UZ% Ldischarge(e,t) = UZ% Lstorage(e,t) - UZ% Lstorage(e,t-1)
                 ! write(*,*) "Ldis", time% Lts, "calcd"
             ELSE
                 !## case 2: UZ is inactive
-                !write(*,*) "no UZ"
-                !write(*,*) "GW, SW before calc = ", GW% Lstorage(e,t-1), SW% Lstorage(e,t-1)
-                !write(*,*) "UZ top = ", UZ% top(e)
-                !write(*,*) "UZ = ", UZ% Lstorage(e,t-1)
                 ! transfer excess GW storage and p to SW storage, set GW and UZ_Albound to GSL, and set UZ thickness to 0
                 IF(GW% Lstorage(e,t-1) > UZ% top(e)) THEN
                     SW% Lstorage(e,t) = SW% Lstorage(e,t-1) + ((GW% Lstorage(e,t-1) - UZ% top(e)) * porosity_gwbnd) + P
@@ -789,7 +790,6 @@ CONTAINS
                     UZ% Lstorage(e,t) = 0.0_REAL128
                     UZ% Lepv = 0.0_REAL128
                 ELSE
-                    !write(*,*) "GW < UZ top", GW% Lstorage(e,t-1), UZ% top(e)
                     CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
                     IF(.NOT. UZ_(e)% isactive) CALL solve(e, t, dt, P, ET)
                 END IF
@@ -798,9 +798,7 @@ CONTAINS
                 CALL logger% log(logger% DEBUG, "GW, SW after calc = ", GW% Lstorage(e,t), SW% Lstorage(e,t))
                 CALL logger% log(logger% DEBUG, "UZ = ", UZ% Lstorage(e,t))
 
-                !write(*,*) "GW, SW after calc = ", GW% Lstorage(e,t), SW% Lstorage(e,t)
-                !write(*,*) "UZ = ", UZ% Lstorage(e,t)
-                !write(*,*) "P, ET = ", P, ET
+
                 ! ET extraction from SW storage and GW storage if ET > SM storage
                 IF (SW% Lstorage(e,t) > ET) THEN
                     SW% Lstorage(e,t) = SW% Lstorage(e,t) - ET
@@ -816,25 +814,28 @@ CONTAINS
 
                 ! calculate discharges
                 pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
-
                 IF((GW% Lstorage(e,t-1) < pSM_% ADubound .OR. GW% Lstorage(e,t-1) == pSM_% ADubound) .AND. (GW% Lstorage(e,t-1) > pSM_% ADlbound .OR. GW% Lstorage(e,t-1) == pSM_% ADlbound)) THEN
-                    ! write(*,*) "*0"
-                    GW% Ldischarge(e,t) = (GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) * porosity_gwbnd
-                ELSE IF(GW% Lstorage(e,t-1) > pSM_% ADubound) THEN
-                    ! GW was in the upper layer; i.e. GW is falling
-                    ! DO 1
-                    ! write(*,*) "*+1"
-                    GW% Ldischarge(e,t) = (pSM_% ADubound - GW% Lstorage(e,t-1)) * UZ_(e)% SM(UZ_(e)% gws_bnd_smid - 1)% porosity + &
-                        (GW% Lstorage(e,t) - pSM_% ADubound) * porosity_gwbnd
-                ELSE IF(GW% Lstorage(e,t-1) < pSM_% ADlbound) THEN
-                    ! GW was in the lower layer; i.e. GW is rising
-                    ! write(*,*) "*-1"
-                    GW% Ldischarge(e,t) = (pSM_% ADlbound - GW% Lstorage(e,t-1)) * UZ_(e)% SM(UZ_(e)% gws_bnd_smid + 1)% porosity + &
-                        (GW% Lstorage(e,t) - pSM_% ADlbound) * porosity_gwbnd
+                    GW% Ldischarge(e,t) = (GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) * pSM_% porosity
+                ELSE
+                    sgn = SIGN(1_INT8, UZ_(e)% prev_gws_bnd_smid - UZ_(e)% gws_bnd_smid)
+                    GW% Ldischarge(e,t) = 0.0_REAL128
+
+                    DO l = UZ_(e)% prev_gws_bnd_smid, UZ_(e)% gws_bnd_smid, sgn
+                        pSM_ => UZ_(e)% SM(l)
+
+                        IF(sgn == -1) THEN
+                            GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MAX(GW% Lstorage(e,t), pSM_% ADlbound) - MIN(GW% Lstorage(e,t-1), pSM_% ADubound))
+                        ELSE
+                            GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MIN(GW% Lstorage(e,t), pSM_% ADubound) - MAX(GW% Lstorage(e,t-1), pSM_% ADlbound))
+                        END IF
+                        
+                        CALL logger% log(logger% DEBUG, "GW_dis = ", GW% Ldischarge(e,t))
+                    END DO
                 END IF
+
                 SW% Ldischarge(e,t) = SW% Lstorage(e,t) - SW% Lstorage(e,t-1)
                 UZ% Ldischarge(e,t) = UZ% Lstorage(e,t) - UZ% Lstorage(e,t-1)
-                ! write(*,*) "Ldis", time% Lts, "calcd*"
+
             END IF
 
             CALL logger% log(logger% DEBUG, "**********")

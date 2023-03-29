@@ -80,7 +80,7 @@ MODULE Mstorages
         ! Aubound, Albound (abs. upper and lower bounds): 	[m]		[nlay]								{relative to the defined datum}
         ! # ADD: option to specify whether the layers are physical or virtual to enable single vanGenuchten parameter set for all layers
         TYPE(Csm), DIMENSION(:), POINTER :: SM ! 				[nlay]
-        INTEGER(INT8) :: nlay, gws_bnd_smid
+        INTEGER(INT8) :: nlay, gws_bnd_smid, prev_gws_bnd_smid
         ! REAL(REAL64), POINTER :: Aubound
         ! REAL(REAL128) :: Albound
         LOGICAL :: isactive
@@ -141,8 +141,8 @@ CONTAINS
     END SUBROUTINE deactivate
 
 
-    ! #TODO: turn this into a pass procedure so that it can be called from solve() directly and also from uz% resolve(), thus avoiding for the call_resolve flag
     SUBROUTINE stabalize_sm_gw(e, t, pSM_, GW, SS, mode, call_resolve, prev_sm_in)
+        ! #TODO: turn this into a pass procedure so that it can be called from solve() directly and also from uz% resolve(), thus avoiding for the call_resolve flag
         INTEGER(INT32), INTENT(IN) :: e, t
         TYPE(Csm), POINTER, INTENT(INOUT) :: pSM_
         TYPE(Cgw), INTENT(INOUT) :: GW
@@ -255,7 +255,7 @@ CONTAINS
             pSM_% vanG => UZ% layer(pSM_% lid)% vanG
             pSM_% ks => UZ% layer(pSM_% lid)% ks(e)
             pSM_% porosity => UZ% layer(pSM_% lid)% porosity(e)
-            ! #FIXME, #PONDER: couple porosity and theta_s of vanG and thus eliminate per element (ks and) porosity declaration? OR maintain bimodal porosity?
+            ! #PONDER: couple porosity and theta_s of vanG and thus eliminate per element (ks and) porosity declaration? OR maintain bimodal porosity?
 
             pSM_% ADlbound => UZ% layer(pSM_% lid)% Albound(e)
             pSM_% ADubound => UZ% layer(pSM_% lid)% Aubound(e)
@@ -277,7 +277,7 @@ CONTAINS
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Setting SM_ini. SMeq = ", pSM_% Gstorage(1))
 
                 pSM_% IC = pSM_% vanG% theta_r ! #FIXME, #PONDER: set min IC to something representative of theta_r (+2: 640, 655)
-                pSM_% IC_ratio =MIN(pSM_% IC / ABS(pSM_% RWubound - pSM_% RWlbound), 0.1)
+                pSM_% IC_ratio = MIN(pSM_% IC / ABS(pSM_% RWubound - pSM_% RWlbound), 0.1)
                 ! #TODO: take min IC_ratio as input parameter #PONDER: could a higher IC-ratio_min act as a proxy for macropore inf? (+2: 644, 661)
 
                 UZ% Gstorage(e,1) = UZ% Gstorage(e,1) + pSM_% Gstorage(1)
@@ -285,6 +285,7 @@ CONTAINS
                 IF (GW% Gstorage(e,1) > pSM_% ADlbound .OR. GW% Gstorage(e,1) == pSM_% ADlbound) THEN
                     ! set the GW bound flag if the GWS lies above the Albound of the layer i.e. GWS lies within the layer and skip checking the underlying SM layers
                     pSM_% gw_bound = .TRUE.
+                    self% prev_gws_bnd_smid = smn
                     self% gws_bnd_smid = smn
                     CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SM layer is GW bound")
                 END IF
@@ -417,6 +418,8 @@ CONTAINS
             !write(*,*) "GW = ", GW% Lstorage(e,t)
             !write(*,*) "GW_bnd SM Abounds ", pSM_% ADubound, pSM_% ADlbound
 
+            ! #BUG: mass balance discrepancy when layer is activated and deactivated; mass is created when GWS is rising and layer is deactivated and mass is lost when GWS is falling and layer is activated
+
             IF (GW% Lstorage(e,t) < pSM_% ADlbound) THEN
                 ! if GWS lies under gws_bnd layer, i.e. GWS is falling
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "GWS is falling")
@@ -479,6 +482,7 @@ CONTAINS
 
                     IF (GW% Lstorage(e,t) > pSM_% ADlbound) THEN
                         pSM_% gw_bound = .TRUE.
+                        self% prev_gws_bnd_smid = self% gws_bnd_smid
                         self% gws_bnd_smid = smn
                         CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SM", smn, " is GW bound")
                         EXIT ! exit SM scanning DO loop
@@ -505,6 +509,7 @@ CONTAINS
                     ! write(*,*) GW% Lstorage(e,t), pSM_% ADubound
                     IF (GW% Lstorage(e,t) < pSM_% ADubound) THEN
                         pSM_% gw_bound = .TRUE.
+                        self% prev_gws_bnd_smid = self% gws_bnd_smid
                         self% gws_bnd_smid = smn
                         CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SM", smn, " is now GW bound")
 

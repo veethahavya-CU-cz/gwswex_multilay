@@ -143,7 +143,7 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 			plt.savefig(os.path.join(fig_path,"mBal."+format), format=format, dpi=pDPI)
 
 # %%
-elems = int(10)
+elems = int(1)
 nlay = 3
 
 Gnts = int(24*30*6) #one every hour for 6 months
@@ -246,9 +246,18 @@ plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotB
 gw_dis, sw_dis, uz_dis, qdiff = np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F')
 GWSWEX.pass_dis(gw_dis, uz_dis, sw_dis, qdiff)
 
-# plt.figure()
-# plt.plot(qdiff[0][1:])
+plt.figure()
+plt.plot(qdiff.sum(axis=0))
+plt.savefig(os.path.join(op_path,'figs',"mBal."+'png'), format='png', dpi=1600)
 # plt.show()
+
+uzs = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+epv = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+GWSWEX.pass_vars(gws, sws, uzs, epv)
+influx = (p.sum())*Gdt - (et.sum())*Gdt
+delta_storages = (uzs[:,-1]-uzs[0,0]).sum() + ((gws[:,-1]-gws[:,0])*pvanGI.theta_s).sum() + (sws[:,-1]-sws[:,0]).sum()
+print("mbal err: {:.2e}".format(influx-delta_storages))
+print("mbal err %: {:.2e}".format((influx-delta_storages)/influx))
 
 # for i in range(1,gws.shape[1]):
 #     gw_dis[0][i-1] = (gws[0][i] - gws[0][i-1])*porosity[0]
