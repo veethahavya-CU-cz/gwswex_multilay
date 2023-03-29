@@ -771,7 +771,9 @@ CONTAINS
                 ! END IF
                 SW% Ldischarge(e,t) = SW% Lstorage(e,t) - SW% Lstorage(e,t-1)
                 swdis = SW% Ldischarge(e,t)
-                IF(swdis>50) write(*,*) "swdis = ", swdis, time% Gts, time% Lts
+                IF(swdis>50 .OR. SW% Ldischarge(e,t)>50) THEN
+                    write(*,*) "swdis = ", swdis, time% Gts, time% Lts
+                END IF
                 UZ% Ldischarge(e,t) = UZ% Lstorage(e,t) - UZ% Lstorage(e,t-1)
             ELSE
                 !## case 2: UZ is inactive
@@ -830,7 +832,9 @@ CONTAINS
                 SW% Ldischarge(e,t) = SW% Lstorage(e,t) - SW% Lstorage(e,t-1)
                 swdis = SW% Ldischarge(e,t)
                 IF(SW% Lstorage(e,t)>50 .OR. SW% Lstorage(e,t-1)>50) write(*,*) "sws: ", SW% Lstorage(e,t-1), SW% Lstorage(e,t), time% Gts, time% Lts
-                IF(swdis>50) write(*,*) "swdis = ", swdis, time% Gts, time% Lts
+                IF(swdis>50 .OR. SW% Ldischarge(e,t)>50) THEN
+                    write(*,*) "swdis = ", swdis, time% Gts, time% Lts
+                END IF
                 UZ% Ldischarge(e,t) = UZ% Lstorage(e,t) - UZ% Lstorage(e,t-1)
 
             END IF
@@ -918,10 +922,12 @@ CONTAINS
             END IF
         END DO
 
-        GW% Gdischarge(e, time% Gts) = SUM(GW% Ldischarge(e, 2:time% Lnts+1))
-        SW% Gdischarge(e, time% Gts) = SUM(SW% Ldischarge(e, 2:time% Lnts+1))
-        IF(SW% Gdischarge(e, time% Gts) > 50) write(*,*) "SW discharge > 50: ", time% Gts, time% Lts, SW% Ldischarge
-        UZ% Gdischarge(e, time% Gts) = SUM(UZ% Ldischarge(e, 2:time% Lnts+1))
+        GW% Gdischarge(e, time% Gts) = GW% Gstorage(e, time% Gts) - GW% Gstorage(e, time% Gts-1)
+        SW% Gdischarge(e, time% Gts) = SW% Gstorage(e, time% Gts) - SW% Gstorage(e, time% Gts-1)
+        IF(SW% Gdischarge(e, time% Gts) > 50) THEN 
+            write(*,*) "SW discharge > 50: ", time% Gts, time% Lts, SW% Ldischarge
+        END IF
+        UZ% Gdischarge(e, time% Gts) = UZ% Gstorage(e, time% Gts) - UZ% Gstorage(e, time% Gts-1)
 
         UZ% Gepv(e, time% Gts) = UZ% Lepv(e, time% Lnts+1)
 
