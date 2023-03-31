@@ -111,7 +111,7 @@ CONTAINS
         ALLOCATE(pSM_% Lepv, pSM_% RWubound, pSM_% RWlbound, pSM_% EQstorage, pSM_% exfiltration, &
             pSM_% inf_cap, pSM_% exf_cap, pSM_% IC, pSM_% IC_ratio)
 
-        IF(PRESENT(nts)) ALLOCATE(pSM_% Lstorage(nts+1))
+        IF(PRESENT(nts) .AND. (.NOT. ALLOCATED(pSM_% Lstorage))) ALLOCATE(pSM_% Lstorage(nts+1))
 
         IF(PRESENT(sm1)) THEN
             IF(sm1 .AND. (.NOT. ALLOCATED(pSM_% infiltration))) ALLOCATE(pSM_% infiltration)
@@ -167,6 +167,7 @@ CONTAINS
                     pSM_% RWlbound = GW% Lstorage(e,t) - MAX(GW% Lstorage(e,t), pSM_% ADlbound)
                     pSM_% RWubound = GW% Lstorage(e,t) - pSM_% ADubound
                     prev_sm = pSM_% Lstorage(t)
+                    CALL pSM_% vanG% setvars()
                     pSM_% Lstorage(t) = pSM_% vanG% integrate(pSM_% RWubound, pSM_% RWlbound)
                     GW% Lstorage(e,t) = GW% Lstorage(e,t) - (pSM_% Lstorage(t) - prev_sm) / pSM_% porosity
                     IF (.NOT. GW% Lstorage(e,t) > pSM_% ADlbound) THEN
@@ -264,8 +265,7 @@ CONTAINS
 
             IF (GW% Gstorage(e,1) < pSM_% ADubound) THEN
                 ! activate the layer if the GW storage is less than the Aubound of the layer i.e. GWS lies in or under the layer
-                IF(smn == 1) check = .TRUE.
-                IF(.NOT. pSM_% isactive) CALL activate(pSM_, sm1=check)
+                IF(.NOT. pSM_% isactive) CALL activate(pSM_, sm1=smn==1)
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SM ", smn, " is active")
 
                 ! calculate the relative bounds for SMeq calculation
@@ -313,7 +313,7 @@ CONTAINS
 
 
     ! Lstorage and Lepv are ALLOCATED in init_ts() if SM(i)% isactive
-    SUBROUTINE resolve(self, e, t, UZ, GW, SW, time, SS)
+    SUBROUTINE resolve(self, e, t, UZ, GW, SW, time, SS, noGW_drawdown)
         !USE Mstorages, ONLY: Cuz, Cuz_
         USE Mtiming, ONLY : Ctime
         USE iso_fortran_env, ONLY : INT32
@@ -325,6 +325,7 @@ CONTAINS
         TYPE(Csw), INTENT(INOUT) :: SW
         TYPE(Ctime), INTENT(IN) :: time ! #TODO: remove after removing comments
         TYPE(Csettings), INTENT(IN) :: SS
+        LOGICAL, INTENT(IN), OPTIONAL :: noGW_drawdown
 
         INTEGER(INT8) :: smn
         INTEGER(INT16) :: itr
@@ -333,6 +334,7 @@ CONTAINS
 
         TYPE(Csm), POINTER :: pSM_
         ! #TODO: calculate thickness of SM and store in a var; reduces calcs for epv and others
+        ! #PONDER: possibly because resolve() is called at t = 1? (i.e. GWini is modified, so GW_dis calc is not correct)
 
         CALL plogger_Mstorages% log(plogger_Mstorages% TRACE, "*** in UZ_resolve ***")
         CALL plogger_Mstorages% log(plogger_Mstorages% TRACE, "Resolving GW bound SM layer: e,t = ", e, t-1)
@@ -344,7 +346,7 @@ CONTAINS
                 pSM_ => self% SM(smn)
                 IF(pSM_% isactive) THEN
                     GW% Lstorage(e,t) = GW% Lstorage(e,t) + (pSM_% Lstorage(t) / pSM_% porosity)
-                    CALL deactivate(pSM_, sm1=(smn == 1))
+                    CALL deactivate(pSM_, sm1=(smn == 1), gw_bound=.FALSE.)
                 END IF
             END DO
 
@@ -361,8 +363,10 @@ CONTAINS
             RETURN
         END IF
 
-        check = GW% Lstorage(e,t) > UZ% top(e) .OR. GW% Lstorage(e,t) == UZ% top(e)
-        IF(check .AND. (.NOT. self% isactive)) RETURN
+        ! check = GW% Lstorage(e,t) > UZ% top(e) .OR. GW% Lstorage(e,t) == UZ% top(e)
+        ! IF(check .AND. (.NOT. self% isactive)) RETURN
+
+        self% isactive = .TRUE.
 
         pSM_ => self% SM(self% gws_bnd_smid)
         check = ((GW% Lstorage(e,t) < pSM_% ADubound) .OR. GW% Lstorage(e,t) == pSM_% ADubound) .AND. ((GW% Lstorage(e,t) > pSM_% ADlbound) .OR. GW% Lstorage(e,t) == pSM_% ADlbound)
@@ -372,7 +376,7 @@ CONTAINS
 
             check = .FALSE.
             IF(.NOT. pSM_% isactive) THEN
-                CALL activate(pSM_, sm1=(self% gws_bnd_smid == 1), gw_bound=.TRUE., nts=time% Lnts)
+                CALL activate(pSM_, sm1=(self% gws_bnd_smid==1), gw_bound=.TRUE., nts=time% Lnts)
                 check = .TRUE.
             END IF
 
@@ -409,8 +413,6 @@ CONTAINS
             CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "GW = ", GW% Lstorage(e,t))
             CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "GW_bnd SM Abounds ", pSM_% ADubound, pSM_% ADlbound)
 
-            ! #BUG: mass balance discrepancy when layer is activated and deactivated; mass is created when GWS is rising and layer is deactivated and mass is lost when GWS is falling and layer is activated
-            ! #PONDER: possibly because resolve() is called at t = 1? (i.e. GWini is modified, so GW_dis calc is not correct)
             IF (GW% Lstorage(e,t) < pSM_% ADlbound) THEN
                 ! if GWS lies under gws_bnd layer, i.e. GWS is falling
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "GWS is falling")
@@ -419,7 +421,7 @@ CONTAINS
                 check = .FALSE.
 
                 IF(.NOT. pSM_% isactive) THEN
-                    CALL activate(pSM_, sm1=(self% gws_bnd_smid == 1), gw_bound=.TRUE., nts=time% Lnts)
+                    CALL activate(pSM_, sm1=(self% gws_bnd_smid==1), gw_bound=.TRUE., nts=time% Lnts)
                     check = .TRUE.
                 END IF
 
@@ -436,8 +438,14 @@ CONTAINS
                     pSM_% Lstorage(t) = pSM_% vanG% integrate(pSM_% RWubound, pSM_% RWlbound)
                     CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SMeq = ", pSM_% Lstorage(t))
 
-                    GW% Lstorage(e,t) = GW% Lstorage(e,t) - (pSM_% Lstorage(t) / pSM_% porosity)
-                    IF (.NOT. GW% Lstorage(e,t) > pSM_% ADlbound) CALL self% resolve(e, t, UZ, GW, SW, time, SS)
+                    IF(PRESENT(noGW_drawdown)) THEN
+                        IF(.NOT. noGW_drawdown) GW% Lstorage(e,t) = GW% Lstorage(e,t) - (pSM_% Lstorage(t) / pSM_% porosity)
+                    ELSE
+                        GW% Lstorage(e,t) = GW% Lstorage(e,t) - (pSM_% Lstorage(t) / pSM_% porosity)
+                    END IF
+                    ! #FIXME: mass balance accountability is not correct here; need to account for SMeq of the deactivated layer for noGW_drawdown case
+                    ! #TODO, #PONDER: create a mass balance object?
+                    ! IF (.NOT. GW% Lstorage(e,t) < pSM_% ADlbound) CALL self% resolve(e, t, UZ, GW, SW, time, SS)
                 END IF
 
                 ! activate the underlying layers until the GW bound layer is discovered, set the bounds, set the GW bound flag, and calculate the respective storages
@@ -445,7 +453,7 @@ CONTAINS
                 DO smn = self% gws_bnd_smid+1, self% nlay
                     pSM_ => self% SM(smn)
 
-                    IF(.NOT. pSM_% isactive) CALL activate(pSM_, nts=time% Lnts, sm1=(smn == 1))
+                    IF(.NOT. pSM_% isactive) CALL activate(pSM_, nts=time% Lnts, sm1=(smn==1))
                     CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SM", smn, " is active. Allocating SM vars")
 
                     pSM_% RWubound = GW% Lstorage(e,t) - pSM_% ADubound ! ub = GWS - L_Aub
@@ -456,8 +464,12 @@ CONTAINS
                     pSM_% Lstorage(t) = pSM_% vanG% integrate(pSM_% RWubound, pSM_% RWlbound)
                     CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SMeq = ", pSM_% Lstorage(t))
 
-                    GW% Lstorage(e,t) = GW% Lstorage(e,t) - (pSM_% Lstorage(t) / pSM_% porosity)
-                    IF (.NOT. GW% Lstorage(e,t) > pSM_% ADlbound) CALL self% resolve(e, t, UZ, GW, SW, time, SS)
+                    IF(PRESENT(noGW_drawdown)) THEN
+                        IF(.NOT. noGW_drawdown) GW% Lstorage(e,t) = GW% Lstorage(e,t) - (pSM_% Lstorage(t) / pSM_% porosity)
+                    ELSE
+                        GW% Lstorage(e,t) = GW% Lstorage(e,t) - (pSM_% Lstorage(t) / pSM_% porosity)
+                    END IF
+                    ! IF (.NOT. GW% Lstorage(e,t) < pSM_% ADubound) CALL self% resolve(e, t, UZ, GW, SW, time, SS)
 
                     CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "GW = ", GW% Lstorage(e,t))
                     IF(SS% stabalize_sm_gw) THEN
@@ -473,7 +485,7 @@ CONTAINS
                     CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "GWS = ", GW% Lstorage(e,t))
                     CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "ePV = ", pSM_% Lepv)
 
-                    IF (GW% Lstorage(e,t) > pSM_% ADlbound) THEN
+                    IF (GW% Lstorage(e,t) > pSM_% ADlbound .OR. GW% Lstorage(e,t) == pSM_% ADlbound) THEN
                         pSM_% gw_bound = .TRUE.
                         self% prev_gws_bnd_smid = self% gws_bnd_smid
                         self% gws_bnd_smid = smn
@@ -481,16 +493,21 @@ CONTAINS
                         EXIT ! exit SM scanning DO loop
                     END IF
                 END DO
-
+            pSM_ => self% SM(self% gws_bnd_smid)
             ELSE IF(GW% Lstorage(e,t) > pSM_% ADubound) THEN
                 ! if GWS lies above gws_bnd layer, i.e. GWS is rising
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "GWS is rising")
 
                 pSM_ => self% SM(self% gws_bnd_smid)
                 ! deactivate the the previously GW bound layer
-                GW% Lstorage(e,t) = GW% Lstorage(e,t) + (pSM_% Lstorage(t) / pSM_% porosity) ! #PONDER: send to upper layer instead of GW?
-                
-                CALL deactivate(pSM_, gw_bound=.TRUE., sm1=(self% gws_bnd_smid==1))
+                IF(pSM_% isactive) THEN
+                    IF(PRESENT(noGW_drawdown)) THEN
+                        IF(.NOT. noGW_drawdown) GW% Lstorage(e,t) = GW% Lstorage(e,t) + (pSM_% Lstorage(t) / pSM_% porosity) ! #PONDER: send to upper layer instead of GW? (+1: 550)
+                    ELSE
+                        GW% Lstorage(e,t) = GW% Lstorage(e,t) + (pSM_% Lstorage(t) / pSM_% porosity)
+                    END IF
+                    CALL deactivate(pSM_, gw_bound=.TRUE., sm1=(self% gws_bnd_smid==1))
+                END IF
 
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SM", self% gws_bnd_smid, " is not active anymore")
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Transferred SM storage to GW and deallocated SM vars for SM", self% gws_bnd_smid)
@@ -500,12 +517,13 @@ CONTAINS
                 inner: DO smn = self% gws_bnd_smid-1, 1, -1
                     pSM_ => self% SM(smn)
 
-                    IF (GW% Lstorage(e,t) < pSM_% ADubound) THEN
+                    IF (GW% Lstorage(e,t) < pSM_% ADubound .OR. GW% Lstorage(e,t) < pSM_% ADubound) THEN
                         pSM_% gw_bound = .TRUE.
                         self% prev_gws_bnd_smid = self% gws_bnd_smid
                         self% gws_bnd_smid = smn
                         CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SM", smn, " is now GW bound")
 
+                        IF(.NOT. pSM_% isactive) CALL activate(pSM_, gw_bound=.TRUE., nts=time% Lnts, sm1=(smn==1))
                         pSM_% RWubound = GW% Lstorage(e,t) - pSM_% ADubound ! ub = GWS - L_Aub
                         pSM_% RWlbound = GW% Lstorage(e,t) - MAX(GW% Lstorage(e,t), pSM_% ADlbound) ! ub = GWS - MAX(GWS, L_Alb)
                         CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Rbounds ", pSM_% RWubound, pSM_% RWlbound)
@@ -527,10 +545,14 @@ CONTAINS
 
                         EXIT inner
                     ELSE
-                        GW% Lstorage(e,t) = GW% Lstorage(e,t) + (pSM_% Lstorage(t) / pSM_% porosity)
-
-                        CALL deactivate(pSM_, gw_bound=.FALSE., sm1=(smn == 1))
-
+                        IF(pSM_% isactive) THEN
+                            IF(PRESENT(noGW_drawdown)) THEN
+                                IF(.NOT. noGW_drawdown) GW% Lstorage(e,t) = GW% Lstorage(e,t) + (pSM_% Lstorage(t) / pSM_% porosity) ! #PONDER: send to upper layer instead of GW? (+1: 550)
+                            ELSE
+                                GW% Lstorage(e,t) = GW% Lstorage(e,t) + (pSM_% Lstorage(t) / pSM_% porosity)
+                            END IF
+                            CALL deactivate(pSM_, gw_bound=.FALSE., sm1=(smn==1))
+                        END IF
                         CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "SM", smn, " is not active anymore")
                     END IF
                 END DO inner
@@ -539,10 +561,16 @@ CONTAINS
 
         ! set the bounds of UZ and calculate its thickness if UZ is active for element e
         IF (.NOT. self% SM(1)% isactive) THEN
-            self% isactive = .FALSE.
-            UZ% Lstorage(e,t) = 0.0
-            UZ% Lepv(e,t) = 0.0
-            CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "UZ is not active anymore")
+            IF(GW% Lstorage(e,t) == UZ% top(e)) THEN
+                self% isactive = .FALSE.
+                UZ% Lstorage(e,t) = 0.0
+                UZ% Lepv(e,t) = 0.0
+                self% gws_bnd_smid = 1
+                CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "UZ is not active anymore")
+            ELSE
+                CALL plogger_Mstorages% log(plogger_Mstorages% WARN, "UZ is still active, but SM(1) was not active! Trying to resolve UZ again...")
+                CALL self% resolve(e, t, UZ, GW, SW, time, SS)
+            END IF
         ELSE
             self% isactive = .TRUE.
             CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "UZ is still active")

@@ -518,7 +518,7 @@ CONTAINS
                     IF (UZ_(e)% SM(l)% isactive) THEN
                         pSM_ => UZ_(e)% SM(l)
 
-                        ALLOCATE(pSM_% Lstorage(time% Lnts+1)) ! UZ_(e)% SM(l)% Ldischarge(time% Lnts+1)
+                        IF(.NOT. ALLOCATED(pSM_% Lstorage)) ALLOCATE(pSM_% Lstorage(time% Lnts+1)) ! UZ_(e)% SM(l)% Ldischarge(time% Lnts+1)
 
                         pSM_% Lstorage(1) = pSM_% Gstorage(time% Gts-1)
 

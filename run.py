@@ -218,9 +218,9 @@ fwrite('p.ip', p)
 fwrite('et.ip', et)
 
 #%%
-GWSWEX.init('/home/gwswex_dev/GWSWEX/multilay/gwswex.yml')
+GWSWEX.init('/home/gwswex_dev/GWSWEX/multilay/gwswex.yml', gw_ini, sw_ini)
 
-GWSWEX.run(gw_ini, sw_ini)
+GWSWEX.run()
 
 ### FOR MULTILAYERED SM PLOTS ###
 gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
@@ -272,5 +272,6 @@ plot(0, 1, Gnts+1, nlay=nlay, plotWlev=False, plotPrec=False, plotDis=True, plot
 # plt.figure(figsize=(10,5))
 # plt.plot((gw_dis[0][ll:-1]+sw_dis[0][ll:-1]+sm_dis[0][ll:-1]))
 # plt.plot((p[0][ll:-1]-et[0][ll:-1])*Gdt)
-plt.show()
+# plt.show()
 # %%
+GWSWEX.finalize()
