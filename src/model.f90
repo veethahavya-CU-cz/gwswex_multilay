@@ -581,7 +581,7 @@ CONTAINS
         INTEGER(INT32), INTENT(IN) :: e, t
         REAL(REAL32), INTENT(IN) :: dt
         REAL(REAL128), INTENT(IN) :: P, ET
-        REAL(REAL128), INTENT(IN), OPTIONAL :: lateral_GW_flux, lateral_SW_flux
+        REAL(REAL64), INTENT(IN), OPTIONAL :: lateral_GW_flux, lateral_SW_flux
 
 
         REAL(REAL64), POINTER :: porosity_gwbnd, porosity_gwbnd_above, porosity_gwbnd_below
@@ -678,15 +678,6 @@ CONTAINS
             pSM_% Lstorage(t) = pSM_% Lstorage(t-1) + pSM_% infiltration + infiltration_sw - et_deficit
             CALL logger% log(logger% DEBUG, "SM1, after inf. = ", pSM_% Lstorage(t-1), pSM_% Lstorage(t))
 
-            ! IF(pSM_% Lstorage(t) > pSM_% Lepv) THEN
-            !     IF(.NOT. UZ_(e)% gws_bnd_smid == 1) THEN
-            !         SW% Lstorage(e,t) = SW% Lstorage(e,t) + (pSM_% Lstorage(t) - pSM_% Lepv)
-            !         pSM_% Lstorage(t) = pSM_% Lepv
-            !     ELSE
-            !         excess_sm = pSM_% Lstorage(t) - pSM_% Lepv
-            !         pSM_% Lstorage(t) = pSM_% Lepv
-            !     END IF
-            ! END IF
             CALL logger% log(logger% DEBUG, "SM1, SW = ", pSM_% Lstorage(t), SW% Lstorage(e,t))
 
             CALL UZ_(e)% solve(e, t, dt, UZ, GW, SW, time, SS)
@@ -738,38 +729,12 @@ CONTAINS
             ! END IF
             !                 CALL logger% log(logger% DEBUG, "GW, UZ = ", GW% Lstorage(e,t), UZ% Lstorage(e,t))
 
-            ! calculate discharges
-            pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
-            IF((GW% Lstorage(e,t-1) < pSM_% ADubound .OR. GW% Lstorage(e,t-1) == pSM_% ADubound) .AND. (GW% Lstorage(e,t-1) > pSM_% ADlbound .OR. GW% Lstorage(e,t-1) == pSM_% ADlbound)) THEN
-                GW% Ldischarge(e,t) = (GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) * pSM_% porosity
-            ELSE
-                sgn = SIGN(1_INT8, UZ_(e)% prev_gws_bnd_smid - UZ_(e)% gws_bnd_smid)
-                GW% Ldischarge(e,t) = 0.0_REAL128
-
-                DO l = UZ_(e)% prev_gws_bnd_smid, UZ_(e)% gws_bnd_smid, -sgn
-                    pSM_ => UZ_(e)% SM(l)
-
-                    IF(sgn == -1) THEN
-                        GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MAX(GW% Lstorage(e,t), pSM_% ADlbound) - MIN(GW% Lstorage(e,t-1), pSM_% ADubound)) * pSM_% porosity
-                    ELSE
-                        GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MIN(GW% Lstorage(e,t), pSM_% ADubound) - MAX(GW% Lstorage(e,t-1), pSM_% ADlbound)) * pSM_% porosity
-                    END IF
-                    
-                    CALL logger% log(logger% DEBUG, "GW_dis = ", GW% Ldischarge(e,t))
-                END DO
-            END IF
-! #FIXME: account for lateral discharges in discharge calc (+1)
-            ! END IF
-            SW% Ldischarge(e,t) = SW% Lstorage(e,t) - SW% Lstorage(e,t-1)
-            UZ% Ldischarge(e,t) = UZ% Lstorage(e,t) - UZ% Lstorage(e,t-1)
 
             ! fluxes are negative when mass leaves the element in GWSWEX; i.e. fluxes are negative when the storage in GWSWEX is greater than external storage
             IF(PRESENT(lateral_SW_flux)) SW% Lstorage(e,t) = SW% Lstorage(e,t) + lateral_SW_flux
             IF(PRESENT(lateral_GW_flux)) THEN
-write(911,*) "GW flux = ", lateral_GW_flux, GW% Lstorage(e,t)
                 GW% Lstorage(e,t) = GW% Lstorage(e,t) + lateral_GW_flux
                 CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
-write(911,*) "balanced GW = ", GW% Lstorage(e,t)
             END IF
 
         ELSE
@@ -807,35 +772,38 @@ write(911,*) "balanced GW = ", GW% Lstorage(e,t)
 
             IF(PRESENT(lateral_SW_flux)) SW% Lstorage(e,t) = SW% Lstorage(e,t) + lateral_SW_flux
             IF(PRESENT(lateral_GW_flux)) THEN
-write(911,*) "GW flux = ", lateral_GW_flux, GW% Lstorage(e,t)
                 GW% Lstorage(e,t) = GW% Lstorage(e,t) + lateral_GW_flux
                 CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
-write(911,*) "balanced GW = ", GW% Lstorage(e,t)
             END IF
-
-            ! calculate discharges
-            pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
-            IF((GW% Lstorage(e,t-1) < pSM_% ADubound .OR. GW% Lstorage(e,t-1) == pSM_% ADubound) .AND. (GW% Lstorage(e,t-1) > pSM_% ADlbound .OR. GW% Lstorage(e,t-1) == pSM_% ADlbound)) THEN
-                GW% Ldischarge(e,t) = (GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) * pSM_% porosity
-            ELSE
-                sgn = SIGN(1_INT8, UZ_(e)% prev_gws_bnd_smid - UZ_(e)% gws_bnd_smid)
-                GW% Ldischarge(e,t) = 0.0_REAL128
-
-                DO l = UZ_(e)% prev_gws_bnd_smid, UZ_(e)% gws_bnd_smid, -sgn
-                    pSM_ => UZ_(e)% SM(l)
-
-                    IF(sgn == -1) THEN
-                        GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MAX(GW% Lstorage(e,t), pSM_% ADlbound) - MIN(GW% Lstorage(e,t-1), pSM_% ADubound)) * pSM_% porosity
-                    ELSE
-                        GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MIN(GW% Lstorage(e,t), pSM_% ADubound) - MAX(GW% Lstorage(e,t-1), pSM_% ADlbound)) * pSM_% porosity
-                    END IF
-                END DO
-            END IF
-
-            SW% Ldischarge(e,t) = SW% Lstorage(e,t) - SW% Lstorage(e,t-1)
-            UZ% Ldischarge(e,t) = UZ% Lstorage(e,t) - UZ% Lstorage(e,t-1)
 
         END IF
+
+        ! calculate discharges
+        ! #FIXME: account for lateral discharges in discharge calc (+1)
+        pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
+        IF((GW% Lstorage(e,t-1) < pSM_% ADubound .OR. GW% Lstorage(e,t-1) == pSM_% ADubound) .AND. (GW% Lstorage(e,t-1) > pSM_% ADlbound .OR. GW% Lstorage(e,t-1) == pSM_% ADlbound)) THEN
+            GW% Ldischarge(e,t) = (GW% Lstorage(e,t) - GW% Lstorage(e,t-1)) * pSM_% porosity
+        ELSE
+            sgn = SIGN(1_INT8, UZ_(e)% prev_gws_bnd_smid - UZ_(e)% gws_bnd_smid)
+            GW% Ldischarge(e,t) = 0.0_REAL128
+
+            DO l = UZ_(e)% prev_gws_bnd_smid, UZ_(e)% gws_bnd_smid, -sgn
+                pSM_ => UZ_(e)% SM(l)
+
+                IF(sgn == -1) THEN
+                    GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MAX(GW% Lstorage(e,t), pSM_% ADlbound) - MIN(GW% Lstorage(e,t-1), pSM_% ADubound)) * pSM_% porosity
+                ELSE
+                    GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MIN(GW% Lstorage(e,t), pSM_% ADubound) - MAX(GW% Lstorage(e,t-1), pSM_% ADlbound)) * pSM_% porosity
+                END IF
+                
+                CALL logger% log(logger% DEBUG, "GW_dis = ", GW% Ldischarge(e,t))
+            END DO
+        END IF
+        SW% Ldischarge(e,t) = SW% Lstorage(e,t) - SW% Lstorage(e,t-1)
+        UZ% Ldischarge(e,t) = UZ% Lstorage(e,t) - UZ% Lstorage(e,t-1)
+
+        IF(PRESENT(lateral_SW_flux)) SW% Ldischarge(e,t) = SW% Ldischarge(e,t) - lateral_SW_flux
+        IF(PRESENT(lateral_GW_flux)) GW% Ldischarge(e,t) = GW% Ldischarge(e,t) - lateral_GW_flux      
 
         CALL logger% log(logger% DEBUG, "**********")
         CALL logger% log(logger% DEBUG, "P, ET = ", P, ET)
@@ -859,7 +827,7 @@ write(911,*) "balanced GW = ", GW% Lstorage(e,t)
         IMPLICIT NONE
 
         INTEGER, INTENT(IN) :: e
-        REAL(REAL128), INTENT(IN), DIMENSION(:), OPTIONAL :: lateral_GW_flux, lateral_SW_flux
+        REAL(REAL64), INTENT(IN), DIMENSION(:), OPTIONAL :: lateral_GW_flux, lateral_SW_flux
 
         REAL(REAL128) :: ET, P
         REAL(REAL32) :: dt
@@ -952,50 +920,25 @@ write(911,*) "balanced GW = ", GW% Lstorage(e,t)
 
 
 
-    SUBROUTINE resolve_l(GWS_ext, SWS_ext)
+    SUBROUTINE resolve_l(lateral_GW_flux, lateral_SW_flux)
 
-        REAL(REAL64), INTENT(IN), DIMENSION(nelements, time% Lnts) :: GWS_ext, SWS_ext
+        REAL(REAL64), INTENT(IN), DIMENSION(:,:) :: lateral_GW_flux, lateral_SW_flux
 
-        REAL(REAL128), DIMENSION(time% Lnts) :: lateral_GW_flux, lateral_SW_flux
-        REAL(REAL128) :: GW_residual, SW_residual
-        INTEGER :: e, t, itr
-        
-        OPEN(UNIT=911, FILE="lateral_fluxes.txt", STATUS="REPLACE", ACTION="WRITE")
+        INTEGER :: e
 
         !$OMP PARALLEL DO 
         DO e = 1, nelements
 
             IF (.NOT. GW% chd(e)) THEN
             !### free GW boundary case
-            
-                itr = 1
-write(911,*) "GWS_ext(e, :)", GWS_ext(e, :)
                 ! fluxes are negative when mass leaves the element in GWSWEX; i.e. fluxes are negative when the storage in GWSWEX is greater than external storage
-                lateral_GW_flux = GWS_ext(e, :) - GW% Lstorage(e, 2:)
-                lateral_SW_flux = SWS_ext(e, :) - SW% Lstorage(e, 2:)
-write(911,*) "lateral_GW_flux: ", lateral_GW_flux
-                GW_residual = MAXVAL(ABS(GWS_ext(e, :) - GW% Lstorage(e, 2:)))
-                SW_residual = MAXVAL(ABS(SWS_ext(e, :) - SW% Lstorage(e, 2:)))
-write(911,*) "itr: ", itr, " GW_residual: ", GW_residual, " SW_residual: ", SW_residual
+                CALL solve_t(e, lateral_GW_flux=lateral_GW_flux(e,:), lateral_SW_flux=lateral_SW_flux(e,:))
 
-                DO WHILE(itr < SS% max_iterations .AND. (GW_residual > SS% gw_tolerance .OR. SW_residual > SS% sw_tolerance))
-                    lateral_GW_flux = GWS_ext(e, :) - GW% Lstorage(e, 2:)
-                    lateral_SW_flux = SWS_ext(e, :) - SW% Lstorage(e, 1:)
-write(911,*) "lateral_GW_flux: ", lateral_GW_flux
-                    CALL solve_t(e, lateral_GW_flux, lateral_SW_flux)
-
-                    GW_residual = SUM(GWS_ext(e, :) - GW% Lstorage(e, 2:))
-                    SW_residual = SUM(SWS_ext(e, :) - SW% Lstorage(e, 2:))
-write(911,*) "itr: ", itr, " GW_residual: ", GW_residual, " SW_residual: ", SW_residual
-write(911,*) GWS_ext(e, :)
-write(911,*) REAL(GW% Lstorage(e, 2:), KIND=REAL64)
-                    itr = itr + 1
-                END DO
             END IF
 
         END DO
         !$OMP END PARALLEL DO
-CLOSE(911)
+
     END SUBROUTINE resolve_l
 
 
