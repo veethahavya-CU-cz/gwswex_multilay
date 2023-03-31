@@ -770,7 +770,6 @@ write(911,*) "GW flux = ", lateral_GW_flux, GW% Lstorage(e,t)
                 GW% Lstorage(e,t) = GW% Lstorage(e,t) + lateral_GW_flux
                 CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
 write(911,*) "balanced GW = ", GW% Lstorage(e,t)
-                IF(.NOT. UZ_(e)% isactive) RETURN
             END IF
 
         ELSE
@@ -806,6 +805,14 @@ write(911,*) "balanced GW = ", GW% Lstorage(e,t)
                 IF(.NOT. UZ_(e)% isactive) CALL solve(e, t, dt, P=0.0_REAL128, ET=0.0_REAL128) ! #VERIFY: assess if necessary
             END IF
 
+            IF(PRESENT(lateral_SW_flux)) SW% Lstorage(e,t) = SW% Lstorage(e,t) + lateral_SW_flux
+            IF(PRESENT(lateral_GW_flux)) THEN
+write(911,*) "GW flux = ", lateral_GW_flux, GW% Lstorage(e,t)
+                GW% Lstorage(e,t) = GW% Lstorage(e,t) + lateral_GW_flux
+                CALL UZ_(e)% resolve(e, t, UZ, GW, SW, time, SS)
+write(911,*) "balanced GW = ", GW% Lstorage(e,t)
+            END IF
+
             ! calculate discharges
             pSM_ => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)
             IF((GW% Lstorage(e,t-1) < pSM_% ADubound .OR. GW% Lstorage(e,t-1) == pSM_% ADubound) .AND. (GW% Lstorage(e,t-1) > pSM_% ADlbound .OR. GW% Lstorage(e,t-1) == pSM_% ADlbound)) THEN
@@ -822,8 +829,6 @@ write(911,*) "balanced GW = ", GW% Lstorage(e,t)
                     ELSE
                         GW% Ldischarge(e,t) = GW% Ldischarge(e,t) + (MIN(GW% Lstorage(e,t), pSM_% ADubound) - MAX(GW% Lstorage(e,t-1), pSM_% ADlbound)) * pSM_% porosity
                     END IF
-                    
-                    CALL logger% log(logger% DEBUG, "GW_dis = ", GW% Ldischarge(e,t))
                 END DO
             END IF
 
