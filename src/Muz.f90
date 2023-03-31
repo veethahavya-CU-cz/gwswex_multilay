@@ -42,6 +42,7 @@ CONTAINS
     END SUBROUTINE init
 
     SUBROUTINE setvars(self)
+        ! #TODO: call this fn from integrate instead to avoid calling this from UZ_ or solve_main
         ! sets the van Genuchten model parameters for the module from the CvanG class variables
         CLASS(CvanG) :: self
 

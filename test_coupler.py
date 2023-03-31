@@ -261,8 +261,11 @@ while(curr_time < tstop):
     print("gws_l = ", gws_l[0], "\nsws_l = ", sws_l[0], "\nuzs_l = ", uzs_l[0])
 
     print("Simulating external discharges...")
-    gws_ext = gws_l + np.random.randn(Lnts)*1e-2
-    sws_ext = sws_l + abs(np.random.randn(Lnts))*1e-5
+    if any(gws_l[0] >= top[0]):
+        gws_ext = np.sort(gws_l - abs(np.random.randn(Lnts)*1e-4))
+    else:
+        gws_ext = np.sort(gws_l + np.random.randn(Lnts)*1e-2)
+    sws_ext = np.sort(sws_l + abs(np.random.randn(Lnts))*1e-5)
     print("gws_ext = ", gws_ext[0], "\nsws_ext = ", sws_ext[0])
 
     print("Updating external discharges...")
