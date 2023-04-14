@@ -111,7 +111,7 @@ MODULE GWSWEX
 
 
     SUBROUTINE update(auto_advance)
-        USE model, ONLY: init_ts, solve_e, time
+        USE model, ONLY: init_ts, solve_e
 
         IMPLICIT NONE
 
@@ -120,6 +120,20 @@ MODULE GWSWEX
         CALL init_ts(auto_advance=LOGICAL(auto_advance, KIND=4))
         CALL solve_e()
     END SUBROUTINE update
+
+
+
+    SUBROUTINE update_ini(auto_advance, gw_ini, sw_ini)
+        USE model, ONLY: init_ts, solve_e
+
+        IMPLICIT NONE
+
+        LOGICAL(1), INTENT(IN) :: auto_advance
+        REAL(8), DIMENSION(:), INTENT(IN), OPTIONAL :: gw_ini, sw_ini
+
+        CALL init_ts(gw_ini=gw_ini, sw_ini=sw_ini, auto_advance=LOGICAL(auto_advance, KIND=4))
+        CALL solve_e()
+    END SUBROUTINE update_ini
 
 
 

@@ -670,6 +670,7 @@ CONTAINS
             CALL logger% log(logger% DEBUG, "SW was = ", SW% Lstorage(e,t-1))
             CALL logger% log(logger% DEBUG, "SW is = ", SW% Lstorage(e,t))
 
+            ! #FIXME: allow ET extraction even when GWS == BOT, but restrict -ve exfiltration from GWbnd SM
             et_deficit = ET - et_sw
             IF(((GW% Lstorage(e,t-1) + (et_deficit / porosity_gwbnd)) < UZ% bot(UZ% nlay, e)) .OR. (GW% Lstorage(e,t-1) == UZ% bot(UZ% nlay, e))) &
                 et_deficit = (GW% Lstorage(e,t-1) - UZ% bot(UZ% nlay, e)) * porosity_gwbnd ! no ET extraction from GW if GW is below UZ bottom
@@ -877,7 +878,7 @@ CONTAINS
         END DO
 
         GW% Gdischarge(e, time% Gts) = SUM(GW% Ldischarge(e, 2:time% Lnts+1))
-        SW% Gdischarge(e, time% Gts) = SW% Gstorage(e, time% Gts) - SW% Gstorage(e, time% Gts-1) ! #HACK: to avoid mysterious error in SW% Gdischarge calc. where SW% Gdischarge == GW% Gstorage(t-1) even though SW% Ldischarge is calcd properly
+        SW% Gdischarge(e, time% Gts) = SUM(SW% Ldischarge(e, 2:time% Lnts+1)) 
         UZ% Gdischarge(e, time% Gts) = SUM(UZ% Ldischarge(e, 2:time% Lnts+1))
 
         UZ% Gepv(e, time% Gts) = UZ% Lepv(e, time% Lnts+1)
@@ -893,11 +894,9 @@ CONTAINS
 
 
 
-    SUBROUTINE solve_e(lateral_GW_flux, lateral_SW_flux)
+    SUBROUTINE solve_e()
 
         IMPLICIT NONE
-
-        REAL(REAL128), INTENT(IN), DIMENSION(:), OPTIONAL :: lateral_GW_flux, lateral_SW_flux
 
         INTEGER(INT32) :: e
 

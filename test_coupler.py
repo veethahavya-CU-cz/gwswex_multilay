@@ -15,7 +15,8 @@ os.environ['OMP_NUM_THREADS'] = str(psutil.cpu_count(logical = False))
 sys.path.append(os.path.abspath('libs/'))
 from gwswex_wrapper import gwswex as GWSWEX
 
-
+# TODO: make GWSWEX py library so that these defs need not be repeated
+# TODO: set all dis to nan if 0
 def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True, plotDis=True, plotBal=True, savefig=True, dDPI=90, pDPI=1600, alpha_scatter=0.7, scatter_size=3, format='jpg'):
 	#formats = jpg, svg, png, jpg
 	fig_path = os.path.join(op_path, 'figs/')
@@ -141,7 +142,7 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 			plt.savefig(os.path.join(fig_path,"mBal."+format), format=format, dpi=pDPI)
 
 
-elems = int(1)
+nelems = int(1)
 nlay = 3
 
 Gdt = 3600
@@ -156,23 +157,23 @@ class pvanGI:
 	alpha: np.float64 = 0.35
 	n: np.float64 = 1.25
 
-top = np.full(elems, 150, dtype=np.float64, order='F')
-bot = np.full((nlay, elems), 0, dtype=np.float64, order='F')
+top = np.full(nelems, 150, dtype=np.float64, order='F')
+bot = np.full((nlay, nelems), 0, dtype=np.float64, order='F')
 bot[0] = top - 1
 bot[1] = top - 3
 bot[2] = top - 10
 
-porosity = np.full(elems, pvanGI.theta_s, dtype=np.float64, order='F')
-ks = np.full(elems, 66e-3, dtype=np.float64, order='F')
-chd = np.full(elems, 0, dtype=int, order='F')
-p = np.full((elems,Gnts+1), 6.66*(1e-3/3600)) #mm/h
+porosity = np.full(nelems, pvanGI.theta_s, dtype=np.float64, order='F')
+ks = np.full(nelems, 66e-3, dtype=np.float64, order='F')
+chd = np.full(nelems, 0, dtype=int, order='F')
+p = np.full((nelems,Gnts+1), 6.66*(1e-3/3600)) #mm/h
 p[0,int(Gnts/2):Gnts+1] = 1*(1e-3/3600)
 
-et = np.full((elems,Gnts+1), 3.33*(1e-3/3600))
+et = np.full((nelems,Gnts+1), 3.33*(1e-3/3600))
 
-isactive = np.full((nlay, elems), True, dtype=bool, order='F')
+isactive = np.full((nlay, nelems), True, dtype=bool, order='F')
 gw_ini = np.array(bot[2] + 3, dtype=np.float64, order='F')
-sw_ini = np.array(np.random.default_rng().uniform(0, 1e-2, elems), dtype=np.float64, order='F')
+sw_ini = np.array(np.random.default_rng().uniform(0, 1e-2, nelems), dtype=np.float64, order='F')
 
 
 def fwrite(fname, val):
@@ -182,7 +183,7 @@ def fwrite(fname, val):
 	Ffile.close()
 
 def fread(fname):
-	shape = (elems, Gnts)
+	shape = (nelems, Gnts)
 	Ffile = FortranFile(os.path.join(op_path,fname), 'r')
 	val = Ffile.read_reals().reshape(shape, order='F')
 	Ffile.close()
@@ -218,22 +219,23 @@ Lnts = GWSWEX.get_lnts()
 Gts = GWSWEX.get_gts()
 curr_time = datetime.utcfromtimestamp(GWSWEX.get_curr_time_unix())
 
-gws_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
-sws_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
-uzs_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
-epv_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
+gws_l = np.empty((nelems, Lnts), dtype=np.float64, order='F')
+sws_l = np.empty((nelems, Lnts), dtype=np.float64, order='F')
+uzs_l = np.empty((nelems, Lnts), dtype=np.float64, order='F')
+epv_l = np.empty((nelems, Lnts), dtype=np.float64, order='F')
 GWSWEX.grab_result('gws_l', gws_l)
 GWSWEX.grab_result('sws_l', sws_l)
 GWSWEX.grab_result('uzs_l', uzs_l)
 GWSWEX.grab_result('epv_l', epv_l)
 
-gw_dis = np.empty((elems, Lnts), dtype=np.float64, order='F')
-sw_dis = np.empty((elems, Lnts), dtype=np.float64, order='F')
-uz_dis = np.empty((elems, Lnts), dtype=np.float64, order='F')
+gw_dis = np.empty((nelems, Lnts), dtype=np.float64, order='F')
+sw_dis = np.empty((nelems, Lnts), dtype=np.float64, order='F')
+uz_dis = np.empty((nelems, Lnts), dtype=np.float64, order='F')
 GWSWEX.grab_result('gw_dis_l', gw_dis)
 GWSWEX.grab_result('sw_dis_l', sw_dis)
 GWSWEX.grab_result('uz_dis_l', uz_dis)
 
+gw_res = []
 lateral_gw_flux_sum, lateral_sw_flux_sum = 0, 0
 while(curr_time < tstop):
     GWSWEX.update(auto_advance=True)
@@ -242,18 +244,18 @@ while(curr_time < tstop):
     Gts = GWSWEX.get_gts()
     curr_time = datetime.utcfromtimestamp(GWSWEX.get_curr_time_unix())
 
-    gws_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
-    sws_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
-    uzs_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
-    epv_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
+    gws_l = np.empty((nelems, Lnts), dtype=np.float64, order='F')
+    sws_l = np.empty((nelems, Lnts), dtype=np.float64, order='F')
+    uzs_l = np.empty((nelems, Lnts), dtype=np.float64, order='F')
+    epv_l = np.empty((nelems, Lnts), dtype=np.float64, order='F')
     GWSWEX.grab_result('gws_l', gws_l)
     GWSWEX.grab_result('sws_l', sws_l)
     GWSWEX.grab_result('uzs_l', uzs_l)
     GWSWEX.grab_result('epv_l', epv_l)
 
-    gw_dis = np.empty((elems, Lnts), dtype=np.float64, order='F')
-    sw_dis = np.empty((elems, Lnts), dtype=np.float64, order='F')
-    uz_dis = np.empty((elems, Lnts), dtype=np.float64, order='F')
+    gw_dis = np.empty((nelems, Lnts), dtype=np.float64, order='F')
+    sw_dis = np.empty((nelems, Lnts), dtype=np.float64, order='F')
+    uz_dis = np.empty((nelems, Lnts), dtype=np.float64, order='F')
     GWSWEX.grab_result('gw_dis_l', gw_dis)
     GWSWEX.grab_result('sw_dis_l', sw_dis)
     GWSWEX.grab_result('uz_dis_l', uz_dis)
@@ -261,34 +263,39 @@ while(curr_time < tstop):
     print("Solved until: ", curr_time, "Lnts = ", Lnts)
     print("gws_l = ", gws_l[0], "\nsws_l = ", sws_l[0], "\nuzs_l = ", uzs_l[0])
 
-    print("Simulating external discharges...")
-    gws_ext = np.sort(gws_l + np.random.randn(Lnts)*1e-5)
-    sws_ext = np.sort(sws_l + abs(np.random.randn(Lnts))*1e-5)
-    print("gws_ext = ", gws_ext[0], "\nsws_ext = ", sws_ext[0])
+    # print("Simulating external discharges...")
+    # gws_ext = np.sort(gws_l + np.random.randn(Lnts)*1e-2)
+    # sws_ext = np.sort(sws_l + abs(np.random.randn(Lnts))*1e-5)
+    # print("gws_ext = ", gws_ext[0], "\nsws_ext = ", sws_ext[0])
 
-    lateral_gw_flux = gws_ext - gws_l
-    lateral_sw_flux = sws_ext - sws_l
-    lateral_gw_flux_sum += np.sum(lateral_gw_flux)
-    lateral_sw_flux_sum += np.sum(lateral_sw_flux)
-    print("Updating external discharges...")
-    GWSWEX.resolve(lateral_gw_flux, lateral_sw_flux)
+    # lateral_gw_flux = gws_ext - gws_l
+    # lateral_sw_flux = sws_ext - sws_l
+    # for e in range(nelems):
+    #     for t in range(1,Lnts):
+    #         lateral_gw_flux[e,t] = lateral_gw_flux[e,t-1] - lateral_gw_flux[e,t-1]
+    # #         lateral_sw_flux[e,t] = lateral_sw_flux[e,t-1] - lateral_sw_flux[e,t-1]
+    # lateral_gw_flux_sum += np.sum(lateral_gw_flux)
+    # lateral_sw_flux_sum += np.sum(lateral_sw_flux)
+    # print("Updating external discharges...")
+    # GWSWEX.resolve(lateral_gw_flux, lateral_sw_flux)
 
-    gws_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
-    sws_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
-    uzs_l = np.empty((elems, Lnts), dtype=np.float64, order='F')
-    GWSWEX.grab_result('gws_l', gws_l)
-    GWSWEX.grab_result('sws_l', sws_l)
-    GWSWEX.grab_result('uzs_l', uzs_l)
+    # gws_l = np.empty((nelems, Lnts), dtype=np.float64, order='F')
+    # sws_l = np.empty((nelems, Lnts), dtype=np.float64, order='F')
+    # uzs_l = np.empty((nelems, Lnts), dtype=np.float64, order='F')
+    # GWSWEX.grab_result('gws_l', gws_l)
+    # GWSWEX.grab_result('sws_l', sws_l)
+    # GWSWEX.grab_result('uzs_l', uzs_l)
 
-    print("gws_l = ", gws_l[0], "\nsws_l = ", sws_l[0], "\nuzs_l = ", uzs_l[0])
-
+    # print("gws_l = ", gws_l[0], "\nsws_l = ", sws_l[0], "\nuzs_l = ", uzs_l[0])
+    # print("GW residuals = ", gws_l - gws_ext, "SW residuals = ", sws_l - sws_ext)
+    # gw_res.append(np.sum(gws_l - gws_ext))
 
 
 ### FOR MULTILAYERED SM PLOTS ###
-gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-sws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-sms = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
-epv = np.empty((nlay, elems, Gnts+1), dtype=np.float64, order='F')
+gws = np.empty((nelems, Gnts+1), dtype=np.float64, order='F')
+sws = np.empty((nelems, Gnts+1), dtype=np.float64, order='F')
+sms = np.empty((nlay, nelems, Gnts+1), dtype=np.float64, order='F')
+epv = np.empty((nlay, nelems, Gnts+1), dtype=np.float64, order='F')
 GWSWEX.pass_vars_nlay(gws, sws, sms, epv)
 plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
 
@@ -303,8 +310,8 @@ plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotB
 gw_dis, sw_dis, uz_dis, qdiff = np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F'), np.empty(gws.shape, dtype=np.float64, order='F')
 GWSWEX.pass_dis(gw_dis, uz_dis, sw_dis, qdiff)
 
-uzs = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
-epv = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
+uzs = np.empty((nelems, Gnts+1), dtype=np.float64, order='F')
+epv = np.empty((nelems, Gnts+1), dtype=np.float64, order='F')
 GWSWEX.pass_vars(gws, sws, uzs, epv)
 
 influx = (p.sum())*Gdt - (et.sum())*Gdt + lateral_gw_flux_sum + lateral_sw_flux_sum
@@ -316,3 +323,7 @@ print("mbal err %: {:.2e}".format((influx-delta_storages)/influx))
 plot(0, 1, Gnts+1, nlay=nlay, plotWlev=False, plotPrec=False, plotDis=True, plotBal=True, savefig=True) #True False
 
 GWSWEX.finalize()
+
+# plt.figure()
+# plt.plot(gw_res)
+# plt.show()

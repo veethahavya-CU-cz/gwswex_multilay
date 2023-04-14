@@ -111,7 +111,8 @@ CONTAINS
         ALLOCATE(pSM_% Lepv, pSM_% RWubound, pSM_% RWlbound, pSM_% EQstorage, pSM_% exfiltration, &
             pSM_% inf_cap, pSM_% exf_cap, pSM_% IC, pSM_% IC_ratio)
 
-        IF(PRESENT(nts) .AND. (.NOT. ALLOCATED(pSM_% Lstorage))) ALLOCATE(pSM_% Lstorage(nts+1))
+        ! IF(PRESENT(nts) .AND. (.NOT. ALLOCATED(pSM_% Lstorage))) ALLOCATE(pSM_% Lstorage(nts+1))
+        IF(PRESENT(nts)) ALLOCATE(pSM_% Lstorage(nts+1))
 
         IF(PRESENT(sm1)) THEN
             IF(sm1 .AND. (.NOT. ALLOCATED(pSM_% infiltration))) ALLOCATE(pSM_% infiltration)
@@ -699,13 +700,17 @@ CONTAINS
 
                 IF(pSM_% Lstorage(t) > pSM_% Lepv) pSM_% exfiltration = pSM_% exfiltration + (pSM_% Lstorage(t) - pSM_% Lepv)
 
+                ! #BUG: causes segfault; fix to avoid storage fluctuations when GW <= BOT (+1: 823)
+                ! IF(pSM_% gw_bound) THEN
+                !     IF((GW% Lstorage(e,t) + pSM_% exfiltration/pSM_% porosity) < UZ% bot(UZ% nlay, e)) pSM_% exfiltration = (GW% Lstorage(e,t) - UZ% bot(UZ% nlay, e)) * pSM_% porosity
+                ! END IF
+
                 pSM_% Lstorage(t) = pSM_% Lstorage(t) - pSM_% exfiltration
 
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "exfiltration, after ePV balancing = ", pSM_% exfiltration)
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "Lstorage is ", pSM_% Lstorage(t))
 
                 IF(pSM_% gw_bound) EXIT
-                ! #FIXME: limit exfiltration to (GWS - BOT) * porosity if GWS bnd and GWS - exf < BOT and make appropriate changes in solve() (+1: 799)
 
             END IF
         END DO
@@ -814,6 +819,10 @@ CONTAINS
                 CALL plogger_Mstorages% log(plogger_Mstorages% DEBUG, "exfiltration was ", pSM_% exfiltration)
 
                 IF(pSM_% Lstorage(t) > pSM_% Lepv) pSM_% exfiltration = pSM_% exfiltration + (pSM_% Lstorage(t) - pSM_% Lepv)
+
+                ! IF(pSM_% gw_bound) THEN
+                !     IF((GW% Lstorage(e,t) + pSM_% exfiltration/pSM_% porosity) < UZ% bot(UZ% nlay, e)) pSM_% exfiltration = (GW% Lstorage(e,t) - UZ% bot(UZ% nlay, e)) * pSM_% porosity
+                ! END IF
 
                 pSM_% Lstorage(t) = pSM_% Lstorage(t) - pSM_% exfiltration
 
