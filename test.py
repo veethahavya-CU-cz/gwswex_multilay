@@ -176,7 +176,8 @@ sw_ini = np.array(np.random.default_rng().uniform(0, 1e-2, elems), dtype=np.floa
 
 #%%
 def fwrite(fname, val):
-
+	if not os.path.exists(ip_path):
+		os.makedirs(ip_path, exist_ok=True)
 	Ffile = FortranFile(os.path.join(ip_path,fname), 'w')
 	Ffile.write_record(val.T)
 	Ffile.close()
@@ -188,8 +189,12 @@ def fread(fname):
 	Ffile.close()
 	return val
 
-ip_path = '/home/gwswex_dev/GWSWEX/multilay/runtime/input'
-op_path = '/home/gwswex_dev/GWSWEX/multilay/runtime/output'
+ip_path = os.path.abspath('runtime/input')
+op_path = os.path.abspath('runtime/output')
+if not os.path.exists(ip_path):
+	os.makedirs(ip_path, exist_ok=True)
+if not os.path.exists(op_path):
+	os.makedirs(op_path, exist_ok=True)
 
 fwrite('top.ip', top)
 fwrite('bot.ip', bot)
@@ -212,7 +217,7 @@ fwrite('p.ip', p)
 fwrite('et.ip', et)
 
 #%%
-GWSWEX.init('/home/gwswex_dev/GWSWEX/multilay/test.yml', gw_ini, sw_ini)
+GWSWEX.init(os.path.abspath('test.yml'), gw_ini, sw_ini)
 
 GWSWEX.run()
 
