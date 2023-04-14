@@ -23,7 +23,7 @@ while getopts ':pndh' opt; do
             if [ $? -eq 0 ]; then
                 echo $'========================================  Successfully compiled GWSWEX fortran module  ======================================== \n\n\n' >> ../build.log
                 echo '========================================  Compiling GWSWEX python wrapper  ========================================' >> ../build.log
-                export LDFLAGS=-Wl,-rpath=../libs/
+                export LDFLAGS=-Wl,-rpath=../lib/
                 export NPY_DISTUTILS_APPEND_FLAGS=1
                 (f2py3 --verbose -c -m gwswex_wrapper --build-dir f2py_scratch --fcompiler=gnu95 --f90flags='-fopenmp -march=znver2 -mtune=znver2  -ftree-vectorize -frecursive' --opt='-O3' \
                     -I. -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
@@ -31,9 +31,9 @@ while getopts ':pndh' opt; do
                     Mtiming.o Mpaths.o Mlogger.o Muz.o Msolver.o Mstorages.o model.o GWSWEX_wrapper.f90) >>../build.log 2>&1
                     if [ $? -eq 0 ]; then
                         echo $'========================================  Successfully compiled GWSWEX python wrapper  ======================================== \n\n\n' >> ../build.log
-                        (rm -f ../libs/*.so 2>/dev/null && mv gwswex_wrapper*.so ../libs/ 2>/dev/null) \
-                            || (mkdir -p ../libs && mv gwswex_wrapper*.so ../libs/ && echo 'library directory created' >> ../build.log)
-                        echo '*** placed the module library in libs/' >> ../build.log
+                        (rm -f ../lib/*.so 2>/dev/null && mv gwswex_wrapper*.so ../lib/ 2>/dev/null) \
+                            || (mkdir -p ../lib && mv gwswex_wrapper*.so ../lib/ && echo 'library directory created' >> ../build.log)
+                        echo '*** placed the module library in lib/' >> ../build.log
                         echo '*** cleaning up' >> ../build.log
                         rm -rf *.mod *.o *.pyf f2py_scratch 2>/dev/null
                         cd ../
@@ -61,7 +61,7 @@ while getopts ':pndh' opt; do
             if [ $? -eq 0 ]; then
                 echo $'========================================  Successfully compiled GWSWEX fortran module  ======================================== \n\n\n' >> ../build.log
                 echo '========================================  Compiling GWSWEX python wrapper  ========================================' >> ../build.log
-                export LDFLAGS=-Wl,-rpath=../libs/
+                export LDFLAGS=-Wl,-rpath=../lib/
                 export NPY_DISTUTILS_APPEND_FLAGS=1
                 (f2py3 --verbose -c -m gwswex_wrapper --build-dir f2py_scratch --fcompiler=gnu95 --f90flags='-march=znver2 -mtune=znver2' --opt='-O3' \
                     -I. -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
@@ -69,9 +69,9 @@ while getopts ':pndh' opt; do
                     Mtiming.o Mpaths.o Mlogger.o Muz.o Msolver.o Mstorages.o model.o GWSWEX_wrapper.f90) >>../build.log 2>&1
                     if [ $? -eq 0 ]; then
                         echo $'========================================  Successfully compiled GWSWEX python wrapper  ======================================== \n\n\n' >> ../build.log
-                        (rm -f ../libs/*.so 2>/dev/null && mv gwswex_wrapper*.so ../libs/ 2>/dev/null) \
-                            || (mkdir -p ../libs && mv gwswex_wrapper*.so ../libs/ && echo 'library directory created' >> ../build.log)
-                        echo '*** placed the module library in libs/' >> ../build.log
+                        (rm -f ../lib/*.so 2>/dev/null && mv gwswex_wrapper*.so ../lib/ 2>/dev/null) \
+                            || (mkdir -p ../lib && mv gwswex_wrapper*.so ../lib/ && echo 'library directory created' >> ../build.log)
+                        echo '*** placed the module library in lib/' >> ../build.log
                         echo '*** cleaning up' >> ../build.log
                         rm -rf *.mod *.o *.pyf f2py_scratch 2>/dev/null
                         cd ../
@@ -99,14 +99,14 @@ while getopts ':pndh' opt; do
             if [ $? -eq 0 ]; then
                 echo $'========================================  Successfully compiled GWSWEX fortran module  ======================================== \n\n\n' >> ../build.log
                 echo '========================================  Compiling GWSWEX debugger  ========================================' >> ../build.log
-                export LDFLAGS=-Wl,-rpath=../libs/
+                export LDFLAGS=-Wl,-rpath=../lib/
                 export NPY_DISTUTILS_APPEND_FLAGS=1
                 (gfortran Mtiming.o Mpaths.o Mlogger.o Muz.o Msolver.o Mstorages.o model.o ../testGWSWEX.f90 -o GWSWEX_debugger -g -fopenmp -march=znver2 -mtune=znver2 -O3 \
                     -I. -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
                     -L/usr/local/lib/ -lfgsl -lgsl -lgslcblas -lm -lgomp -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime) >>../build.log 2>&1
                     if [ $? -eq 0 ]; then
                         echo $'========================================  Successfully compiled GWSWEX debugger  ======================================== \n\n\n' >> ../build.log
-                        (rm -f ../libs/*.so 2>/dev/null && mv GWSWEX_debugger ../bin/ 2>/dev/null) \
+                        (rm -f ../lib/*.so 2>/dev/null && mv GWSWEX_debugger ../bin/ 2>/dev/null) \
                             || (mkdir -p ../bin && mv GWSWEX_debugger ../bin/ && echo 'binaries directory created' >> ../build.log)
                         echo '*** placed the module library in bin/' >> ../build.log
                         echo '*** cleaning up' >> ../build.log
@@ -143,7 +143,7 @@ if (( $OPTIND == 1 )); then
     if [ $? -eq 0 ]; then
         echo $'========================================  Successfully compiled GWSWEX fortran module  ======================================== \n\n\n' >> ../build.log
         echo '========================================  Compiling GWSWEX python wrapper  ========================================' >> ../build.log
-        export LDFLAGS=-Wl,-rpath=../libs/
+        export LDFLAGS=-Wl,-rpath=../lib/
         export NPY_DISTUTILS_APPEND_FLAGS=1
         (f2py3 --verbose -c -m gwswex_wrapper --build-dir f2py_scratch --fcompiler=gnu95 --f90flags='-fopenmp -march=znver2 -mtune=znver2' --opt='-O3' \
             -I. -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ \
@@ -151,9 +151,9 @@ if (( $OPTIND == 1 )); then
             Mtiming.o Mpaths.o Mlogger.o Muz.o Msolver.o Mstorages.o model.o GWSWEX_wrapper.f90) >>../build.log 2>&1
             if [ $? -eq 0 ]; then
                 echo $'========================================  Successfully compiled GWSWEX python wrapper  ======================================== \n\n\n' >> ../build.log
-                (rm -f ../libs/*.so 2>/dev/null && mv gwswex_wrapper*.so ../libs/ 2>/dev/null) \
-                    || (mkdir -p ../libs && mv gwswex_wrapper*.so ../libs/ && echo 'library directory created' >> ../build.log)
-                echo '*** placed the module library in libs/' >> ../build.log
+                (rm -f ../lib/*.so 2>/dev/null && mv gwswex_wrapper*.so ../lib/ 2>/dev/null) \
+                    || (mkdir -p ../lib && mv gwswex_wrapper*.so ../lib/ && echo 'library directory created' >> ../build.log)
+                echo '*** placed the module library in lib/' >> ../build.log
                 echo '*** cleaning up' >> ../build.log
                 rm -rf *.mod *.o *.pyf f2py_scratch 2>/dev/null
                 cd ../
