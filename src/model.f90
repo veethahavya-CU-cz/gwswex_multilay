@@ -146,7 +146,7 @@ CONTAINS
         ! allocate the UZ_
         ALLOCATE(UZ_(nelements))
 
-        time% Gdt = timedelta(seconds = yc_model_domain% value_int("dt", ires))
+        time% Gdt = timedelta(seconds = yc_model_domain% value_int("dt", ires)) ! #TODO: change to float instead of int?
         IF (ires /= 0) THEN
             ERROR STOP "ERROR: dt not defined in config file"
             CALL logger% log(logger%fatal, "dt not defined in config file")
@@ -333,7 +333,7 @@ CONTAINS
 
         CALL yc_model_bnd% destroy()
 
-        yc_model_ic = yp_model% value_map('initial conditions')
+        yc_model_ic = yp_model% value_map('initial conditions') ! #FIXME: this is obsolete as init from wrapper passes the ICs directly
 
         ALLOCATE(r64temp1d(nelements))
         IF (yc_path_files% value_int("IC.GW", ires) == 0) THEN
@@ -381,7 +381,7 @@ CONTAINS
             WRITE(strbuffer, *) yc_model_extf% value_str("et", ires)
             fpath = TRIM(ADJUSTL(paths% input))//"/"//ADJUSTL(TRIM(strbuffer))
             OPEN(UNIT=tu, FILE=TRIM(fpath), FORM='UNFORMATTED', ACTION='READ')
-            READ(tu) EXTF% et(:,2:time% Gnts+1)
+            READ(tu) EXTF% et(:,2:time% Gnts+1) ! #VERIFY: fidelity with mdef file?
             CLOSE (UNIT=tu)
         END IF
         CALL yc_model_extf% destroy()
@@ -447,12 +447,13 @@ CONTAINS
 
         LOGICAL :: chk
 
-        !#PONDER: rethink auto advance and keep only first_run flag (and add option to set SM ini too)?
+        !#PONDER: rethink auto advance and keep only first_run flag
+        !#ADD, #PONDER: (and add option to set SM ini too)?
         ! advance the global timestep and deallocate the local storages, epvs, and discharges from the previous timestep
         IF(auto_advance) THEN
             time% Gts = time% Gts + 1
             DEALLOCATE(GW% Lstorage, UZ% Lstorage, UZ% Lepv, SW% Lstorage, GW% Ldischarge, UZ% Ldischarge, SW% Ldischarge)
-            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(DYNAMIC)
+            !NOMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(DYNAMIC)
             DO e = 1, nelements
                 DO l = 1, UZ_(e)% nlay
                     IF (UZ_(e)% SM(l)% isactive) THEN
@@ -461,11 +462,13 @@ CONTAINS
                     END IF
                 END DO
             END DO
-            !$OMP END PARALLEL DO
+            !NOMP END PARALLEL DO
         END IF
 
+        ! #TODO, #PONDER: set Gdt instead of Lnts based on PET intensity?
 
         time% Lstart = time% Gstart + timedelta(seconds = time% Gdt% total_seconds() * (time% Gts-2))
+        ! #FIXME: time% Lstart = time% Lstart + timedelta(seconds = time% Gdt% total_seconds()); also NEST IT INTO AUTO_ADVANCE IF BLOCK
         time% elapsed = time% Lstart - time% Gstart
         time% wall_elapsed = time% wall_start% now() - time% wall_start
         time% Lstop = time% Lstart + time% Gdt
@@ -512,7 +515,7 @@ CONTAINS
         IF(auto_advance .OR. chk) THEN
             ALLOCATE(GW% Lstorage(nelements, time% Lnts+1), UZ% Lstorage(nelements, time% Lnts+1), UZ% Lepv(nelements, time% Lnts+1), SW% Lstorage(nelements, time% Lnts+1), &
                 GW% Ldischarge(nelements, time% Lnts+1), UZ% Ldischarge(nelements, time% Lnts+1), SW% Ldischarge(nelements, time% Lnts+1))
-            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(DYNAMIC)
+            !NOMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(DYNAMIC) ! #FIXME: OMP here seems to cause segfaults
             DO e = 1, nelements
                 DO l = 1, UZ_(e)% gws_bnd_smid
                     IF (UZ_(e)% SM(l)% isactive) THEN
@@ -532,9 +535,9 @@ CONTAINS
                     END IF
                 END DO
             END DO
-            !$OMP END PARALLEL DO
+            !NOMP END PARALLEL DO
         ELSE
-            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(DYNAMIC)
+            !NOMP PARALLEL DO DEFAULT(SHARED) PRIVATE(e) SCHEDULE(DYNAMIC)
             DO e = 1, nelements
                 DO l = 1, UZ_(e)% nlay
                     IF (UZ_(e)% SM(l)% isactive) THEN
@@ -550,7 +553,7 @@ CONTAINS
                     END IF
                 END DO
             END DO
-            !$OMP END PARALLEL DO
+            !NOMP END PARALLEL DO
         END IF
 
         ! set local storage to the global storage of last dt (or initial conditions for first dt)
@@ -600,7 +603,7 @@ CONTAINS
         excess_sm = 0.0_REAL128
 
         time% Lts = t
-        time% current = time% current + time% Ldt
+        time% current = time% current + time% Ldt ! #FIXME: update current time at init and not here!!!
 
         ! IF(UZ_(e)% SM(UZ_(e)% gws_bnd_smid-1)% isactive) porosity_gwbnd_above => UZ_(e)% SM(UZ_(e)% gws_bnd_smid-1)% porosity
         porosity_gwbnd => UZ_(e)% SM(UZ_(e)% gws_bnd_smid)% porosity

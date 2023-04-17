@@ -12,7 +12,7 @@ import time
 start = time.time()
 os.environ['OMP_NUM_THREADS'] = str(psutil.cpu_count(logical = False))
 
-sys.path.append(os.path.abspath('libs/'))
+sys.path.append(os.path.abspath('lib/'))
 from gwswex_wrapper import gwswex as GWSWEX
 
 # TODO: make GWSWEX py library so that these defs need not be repeated
@@ -265,7 +265,7 @@ while(curr_time < tstop):
     GWSWEX.grab_result('uz_dis_l', uz_dis)
 
     print("Solved until: ", curr_time, "Lnts = ", Lnts)
-    print("gws_l = ", gws_l[0], "\nsws_l = ", sws_l[0], "\nuzs_l = ", uzs_l[0])
+    # print("gws_l = ", gws_l[0], "\nsws_l = ", sws_l[0], "\nuzs_l = ", uzs_l[0])
 
     # print("Simulating external discharges...")
     # gws_ext = np.sort(gws_l + np.random.randn(Lnts)*1e-2)

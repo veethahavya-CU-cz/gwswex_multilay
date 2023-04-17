@@ -23,11 +23,11 @@ MODULE GWSWEX
 
         CALL init_ts(gw_ini=gw_ini, sw_ini=sw_ini, auto_advance=.FALSE., first_run=.TRUE.)
 
-        CALL solve_e()
+        CALL solve_e() !#FIXME: DO NOT SOLVE HERE, JUST INITIALIZE
 
     END SUBROUTINE init
 
-
+! #TODO: add a function to get nelements, tstart, and tstop
 
 
     FUNCTION get_Lnts() RESULT(Lnts)
@@ -56,7 +56,7 @@ MODULE GWSWEX
         USE model, ONLY: time
 
         IMPLICIT NONE
-
+! #FIXME: report time in seconds since start of simulation like mf6 and dfm
         INTEGER :: unix_time
 
         unix_time = time% current% secondsSinceEpoch()
