@@ -3,26 +3,26 @@ model:
     nelements: 1
     dt: 3600
     tstart: 20200101 000000
-    tstop: 20200115 000000
+    tstop: 20200629 000000
     nlay: 3
     top: top.ip
     bot: bot.ip
     layer1:
-      name: inorganic
+      name: l1
       isactive: l1_active.ip
-      vanG: [0.35, 1.25, 0.02, 0.42] # alpha, n, theta_r, theta_s
+      vanG: [0.35, 1.25, 0.02, 0.42]
       ks: l1_ks.ip
       porosity: l1_porosity.ip
     layer2:
-      name: peat1
+      name: l2
       isactive: l2_active.ip
-      vanG: [0.35, 1.25, 0.02, 0.42] # alpha, n, theta_r, theta_s
+      vanG: [0.35, 1.25, 0.02, 0.42]
       ks: l2_ks.ip
       porosity: l2_porosity.ip
     layer3:
-      name: peat2
+      name: l3
       isactive: l3_active.ip
-      vanG: [0.35, 1.25, 0.02, 0.42] # alpha, n, theta_r, theta_s42
+      vanG: [0.35, 1.25, 0.02, 0.42]
       ks: l3_ks.ip
       porosity: l3_porosity.ip
   boundary conditions:
@@ -34,13 +34,13 @@ model:
     p: p.ip
     et: et.ip
   solver settings:
-    pet_intensities: [2.78e-5, 5.56e-4, 8.33e-3]
+    pet_intensities: [2.78e-05, 0.000556, 0.00833]
     pet_nts: [3, 5, 7]
 paths:
   dirs:
-    root: .
-    input: ./runtime/input
-    output: ./runtime/output
+    root: /home/gwswex_dev/GWSWEX/multilay/runtime
+    input: /home/gwswex_dev/GWSWEX/multilay/runtime/input
+    output: /home/gwswex_dev/GWSWEX/multilay/runtime/output
   files:
     DMN.TOP: 1
     DMN.BOT: 1

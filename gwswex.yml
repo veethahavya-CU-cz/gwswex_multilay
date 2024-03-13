@@ -22,7 +22,7 @@ model:
     layer3:
       name: peat2
       isactive: l3_active.ip
-      vanG: [0.35, 1.25, 0.02, 0.42] # alpha, n, theta_r, theta_s
+      vanG: [0.35, 1.25, 0.02, 0.42] # alpha, n, theta_r, theta_s42
       ks: l3_ks.ip
       porosity: l3_porosity.ip
   boundary conditions:
@@ -34,8 +34,8 @@ model:
     p: p.ip
     et: et.ip
   solver settings:
-    pet_intensities: [2.78e-7, 5.56e-7, 8.33e-7, 13.89e-7, 19.44e-7, 27.78e-7, 41.667e-7]
-    pet_nts: [1, 2, 3, 5, 7, 10, 12]
+    pet_intensities: [2.78e-5, 5.56e-4, 8.33e-3]
+    pet_nts: [3, 5, 7]
 paths:
   dirs:
     root: .
@@ -54,5 +54,5 @@ paths:
     EXTF.et: 1
 utils:
   logger:
-    level: 0
+    level: 1
     fname: GWSWEX.log

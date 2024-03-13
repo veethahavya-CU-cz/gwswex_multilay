@@ -1,1 +1,0 @@
-for run in {1..100}; do /bin/python /home/gwswex_dev/gwswex_multilay/test.py; done

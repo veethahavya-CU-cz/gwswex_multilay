@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import time
+import yaml, pickle
 
 
 start = time.time()
@@ -143,12 +144,13 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 
 
 nelems = int(1)
+elems = nelems
 nlay = 3
 
+Gnts = int(24*30*6) #one every hour for 6 months
 Gdt = 3600
 tstart = datetime(2020, 1, 1, 0, 0, 0)
-tstop = datetime(2020, 1, 15, 0, 0, 0)
-Gnts = int((tstop-tstart).total_seconds()/Gdt)
+tstop = tstart + timedelta(seconds=Gnts*Gdt)
 
 @dataclass
 class pvanGI:
@@ -157,23 +159,27 @@ class pvanGI:
 	alpha: np.float64 = 0.35
 	n: np.float64 = 1.25
 
-top = np.full(nelems, 150, dtype=np.float64, order='F')
-bot = np.full((nlay, nelems), 0, dtype=np.float64, order='F')
-bot[0] = top - 1
-bot[1] = top - 3
-bot[2] = top - 10
+top = np.full(elems, 150, dtype=np.float64, order='F')
+bot = np.full((nlay, elems), 0, dtype=np.float64, order='F')
+bot[0] = top - 5
+bot[1] = top - 15
+bot[2] = top - 30
 
-porosity = np.full(nelems, pvanGI.theta_s, dtype=np.float64, order='F')
-ks = np.full(nelems, 66e-3, dtype=np.float64, order='F')
-chd = np.full(nelems, 0, dtype=int, order='F')
-p = np.full((nelems,Gnts+1), 6.66*(1e-3/3600)) #mm/h
-p[0,int(Gnts/2):Gnts+1] = 1*(1e-3/3600)
+porosity = np.full(elems, pvanGI.theta_s, dtype=np.float64, order='F')
+ks = np.full(elems, 75e-5, dtype=np.float64, order='F')
+chd = np.full(elems, 0, dtype=bool, order='F')
+p = np.full((elems,Gnts+1), 2.5*(1e-3/3600))
+# p[:,0:500] = 3.5*(1e-3/3600)
+p[:,500:750] = 0*(1e-3/3600)
+p[:,1000:1250] = 0*(1e-3/3600)
+p[:,1250:1750] = 3.5*(1e-3/3600)
+p[:,1750:2000] = 0*(1e-3/3600)
+p[:,2100:Gnts] = 0*(1e-3/3600)
+et = np.full((elems,Gnts+1), 0.33*(1e-3/3600))
 
-et = np.full((nelems,Gnts+1), 3.33*(1e-3/3600))
-
-isactive = np.full((nlay, nelems), True, dtype=bool, order='F')
-gw_ini = np.array(bot[2] + 3, dtype=np.float64, order='F')
-sw_ini = np.array(np.random.default_rng().uniform(0, 1e-2, nelems), dtype=np.float64, order='F')
+isactive = np.full((nlay, elems), 1, dtype=bool, order='F')
+gw_ini = np.array(bot[2] + 5, dtype=np.float64, order='F')
+sw_ini = np.array(np.random.default_rng().uniform(0, 1e-2, elems), dtype=np.float64, order='F')
 
 
 def fwrite(fname, val):
@@ -189,6 +195,7 @@ def fread(fname):
 	Ffile.close()
 	return val
 
+root_path = os.path.abspath('runtime')
 ip_path = os.path.abspath('runtime/input')
 op_path = os.path.abspath('runtime/output')
 if not os.path.exists(ip_path):
@@ -215,6 +222,108 @@ fwrite('SW_ini.ip', sw_ini)
 
 fwrite('p.ip', p)
 fwrite('et.ip', et)
+
+
+#%%
+mdef_tformat = '%Y%m%d %H%M%S'
+mdef = {
+    'model': {
+        'domain': {
+            'nelements': nelems,
+            'dt': int(Gdt),
+            'tstart': tstart.strftime(mdef_tformat),
+            'tstop': tstop.strftime(mdef_tformat),
+            'nlay': nlay,
+            'top': 'top.ip',
+            'bot': 'bot.ip',
+            'layer1': {
+                'name': 'l1',
+                'isactive': 'l1_active.ip',
+                'vanG': [pvanGI.alpha, pvanGI.n, pvanGI.theta_r, pvanGI.theta_s],
+                'ks': 'l1_ks.ip',
+                'porosity': 'l1_porosity.ip'
+            },
+            'layer2': {
+                'name': 'l2',
+                'isactive': 'l2_active.ip',
+                'vanG': [pvanGI.alpha, pvanGI.n, pvanGI.theta_r, pvanGI.theta_s],
+                'ks': 'l2_ks.ip',
+                'porosity': 'l2_porosity.ip'
+            },
+            'layer3': {
+                'name': 'l3',
+                'isactive': 'l3_active.ip',
+                'vanG': [pvanGI.alpha, pvanGI.n, pvanGI.theta_r, pvanGI.theta_s],
+                'ks': 'l3_ks.ip',
+                'porosity': 'l3_porosity.ip'
+            },
+        },
+        'boundary conditions': {
+            'GW CHD': 'GW_chd.ip'
+        },
+        'initial conditions': {
+            'GW': 'GW_ini.ip',
+            'SW': 'SW_ini.ip'
+        },
+        'external forcings': {
+            'p': 'p.ip',
+            'et': 'et.ip'
+        },
+        'solver settings': {
+            'pet_intensities': [2.78e-5, 5.56e-4, 8.33e-3],
+            'pet_nts': [3, 5, 7]
+        }
+    },
+    'paths': {
+        'dirs': {
+            'root': root_path,
+            'input': ip_path,
+            'output': op_path
+        },
+        'files': {
+            'DMN.TOP': 1,
+            'DMN.BOT': 1,
+            'DMN.LAY.ACT': 1,
+            'DMN.LAY.KS': 1,
+            'DMN.LAY.POR': 1,
+            'BND.CHD': 1,
+            'IC.GW': 1,
+            'IC.SW': 1,
+            'EXTF.p': 1,
+            'EXTF.et': 1
+        }
+    },
+    'utils': {
+        'logger': {
+            'level': 1,
+            'fname': 'GWSWEX.log'
+        }
+    }
+}
+
+
+
+def represent_list(dumper, data):
+    if len(data) == 1:
+        return dumper.represent_scalar(u'tag:yaml.org,2002:seq', str(data[0]))
+    else:
+        return dumper.represent_sequence(u'tag:yaml.org,2002:seq', data, flow_style=True)
+
+yaml.add_representer(list, represent_list)
+
+with open('./test.yml', 'w') as outfile:
+    yaml.dump(mdef, outfile, sort_keys=False)
+
+mdef['auxiliary'] = {}
+mdef['auxiliary']['mdef_tformat'] = mdef_tformat
+mdef['auxiliary']['Gnts'] = Gnts
+mdef['auxiliary']['tstart_dt'] = tstart
+mdef['auxiliary']['tstop_dt'] = tstop
+
+# with open('../../common/data/test.pkl', 'wb') as file:
+#     pickle.dump(mdef, file)
+
+
 
 #%%
 GWSWEX.init(os.path.abspath('test.yml'), gw_ini, sw_ini)
@@ -264,7 +373,8 @@ while(curr_time < tstop):
     GWSWEX.grab_result('sw_dis_l', sw_dis)
     GWSWEX.grab_result('uz_dis_l', uz_dis)
 
-    print("Solved until: ", curr_time, "Lnts = ", Lnts)
+    # print("Solved until: ", curr_time, "Lnts = ", Lnts)
+
     # print("gws_l = ", gws_l[0], "\nsws_l = ", sws_l[0], "\nuzs_l = ", uzs_l[0])
 
     # print("Simulating external discharges...")

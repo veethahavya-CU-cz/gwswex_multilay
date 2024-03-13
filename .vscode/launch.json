@@ -12,6 +12,18 @@
             "externalConsole": false,
             "MIMode": "gdb",
             "preLaunchTask": "build_debug"
+        },
+        {
+            "name": "GWSWEX OMP debugger",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/lib/gwswex_wrapper.cpython-39-x86_64-linux-gnu.so",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}",
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "build_debug_omp"
         }
     ]
 }

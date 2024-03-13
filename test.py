@@ -12,7 +12,7 @@ import time
 start = time.time()
 os.environ['OMP_NUM_THREADS'] = str(psutil.cpu_count(logical = False))
 
-sys.path.append(os.path.abspath('libs/'))
+sys.path.append(os.path.abspath('lib/'))
 from gwswex_wrapper import gwswex as GWSWEX
 
 # %%

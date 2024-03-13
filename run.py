@@ -1,3 +1,4 @@
+#!/bin/python
 #%%
 import numpy as np
 from ctypes import *
@@ -11,7 +12,7 @@ import time
 # %%
 os.environ['OMP_NUM_THREADS'] = str(psutil.cpu_count(logical = False))
 
-sys.path.append(os.path.abspath('libs/'))
+sys.path.append(os.path.abspath('lib/'))
 from gwswex_wrapper import gwswex as GWSWEX
 
 
@@ -37,11 +38,11 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 		plt.figure(dpi=dDPI)
 		plt.xlabel("Time Steps")
 		plt.ylabel("Discharges in Storage")
-		plt.scatter(range(nts_ll,nts_ul), gw_dis[elem,1:], label="GW_dis", color=pal[0],\
+		plt.scatter(range(nts_ll,nts_ul), gw_dis[elem,nts_ll:nts_ul], label="GW_dis", color=pal[0],\
 		alpha=alpha_scatter, s=scatter_size)
-		plt.scatter(range(nts_ll,nts_ul), uz_dis[elem,1:], label="SM_dis", color=pal[1],\
+		plt.scatter(range(nts_ll,nts_ul), uz_dis[elem,nts_ll:nts_ul], label="SM_dis", color=pal[1],\
 		alpha=alpha_scatter, s=scatter_size)
-		plt.scatter(range(nts_ll,nts_ul), sw_dis[elem,1:], label="SW_dis", color=pal[4],\
+		plt.scatter(range(nts_ll,nts_ul), sw_dis[elem,nts_ll:nts_ul], label="SW_dis", color=pal[4],\
 		alpha=alpha_scatter, s=scatter_size)
 		plt.legend(loc='best', fontsize='small')
 		plt.tight_layout()
@@ -149,7 +150,7 @@ nlay = 3
 Gnts = int(24*30*6) #one every hour for 6 months
 Gdt = 3600
 tstart = datetime(2020, 1, 1, 0, 0, 0)
-tstop = tstart + timedelta(seconds=Gnts*Gdt)
+tstop = datetime(2020, 6, 29, 0, 0, 0)
 
 @dataclass
 class pvanGI:
@@ -222,7 +223,7 @@ fwrite('p.ip', p)
 fwrite('et.ip', et)
 
 #%%
-GWSWEX.init(os.path.abspath('test.yml'), gw_ini, sw_ini)
+GWSWEX.init(os.path.abspath('gwswex.yml'), gw_ini, sw_ini)
 
 GWSWEX.run()
 
