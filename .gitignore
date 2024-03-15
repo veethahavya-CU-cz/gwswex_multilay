@@ -1,11 +1,14 @@
-src/f2py_scratch
-src/.archive
-libs/
-bin/
-runtime/
 .dependencies/*/
 .archive/
 .vscode/
+__pycache__/
+
+lib/
+bin/
+src/f2py_scratch
+src/.archive
+
+test/runtime/
 
 *.log
 *.so
