@@ -143,11 +143,11 @@ def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True
 			plt.savefig(os.path.join(fig_path,"mBal."+format), format=format, dpi=pDPI)
 
 
-nelems = int(1)
+nelems = int(50000)
 elems = nelems
 nlay = 3
 
-Gnts = int(24*30*6) #one every hour for 6 months
+Gnts = int(1) #int(24*30*6) #one every hour for 6 months
 Gdt = 3600
 tstart = datetime(2020, 1, 1, 0, 0, 0)
 tstop = tstart + timedelta(seconds=Gnts*Gdt)
@@ -411,7 +411,7 @@ sws = np.empty((nelems, Gnts+1), dtype=np.float64, order='F')
 sms = np.empty((nlay, nelems, Gnts+1), dtype=np.float64, order='F')
 epv = np.empty((nlay, nelems, Gnts+1), dtype=np.float64, order='F')
 GWSWEX.pass_vars_nlay(gws, sws, sms, epv)
-plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
+# plot(0, 1, Gnts+1, nlay=nlay, plotWlev=True, plotPrec=True, plotDis=False, plotBal=False, savefig=True) #True False
 
 ### FOR SINGLE LAYERED SM PLOTS ###
 # gws = np.empty((elems, Gnts+1), dtype=np.float64, order='F')
@@ -434,7 +434,7 @@ delta_storages = (uzs[:,-1]-uzs[0,0]).sum() + ((gws[:,-1]-gws[:,0])*pvanGI.theta
 print("mbal err: {:.2e}".format(influx-delta_storages))
 print("mbal err %: {:.2e}".format((influx-delta_storages)/influx))
 
-plot(0, 1, Gnts+1, nlay=nlay, plotWlev=False, plotPrec=False, plotDis=True, plotBal=True, savefig=True) #True False
+# plot(0, 1, Gnts+1, nlay=nlay, plotWlev=False, plotPrec=False, plotDis=True, plotBal=True, savefig=True) #True False
 
 GWSWEX.finalize()
 

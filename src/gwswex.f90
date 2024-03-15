@@ -68,6 +68,8 @@ MODULE wrapper
             sws = SW% Gstorage
             sms = UZ% Gstorage
             epv = UZ% Gepv
+
+            ! #TODO: write to file
         END SUBROUTINE pass_vars
 
 END MODULE wrapper
@@ -81,6 +83,7 @@ PROGRAM GWSWEX
 
 	IMPLICIT NONE
 
+    ! #TODO: take this as an argument 
     CALL init('/home/gwswex_dev/GWSWEX/multilay/test.yml')
 
     CALL run()

@@ -1,9 +1,9 @@
 model:
   domain:
-    nelements: 1
+    nelements: 50000
     dt: 3600
     tstart: 20200101 000000
-    tstop: 20200629 000000
+    tstop: 20200101 010000
     nlay: 3
     top: top.ip
     bot: bot.ip
