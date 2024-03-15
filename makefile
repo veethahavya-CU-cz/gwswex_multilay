@@ -87,7 +87,7 @@ OBJS := $(SRC_MODULES:.f90=.o)
 # Define targets
 TARGET_LIB_NAME := libgwswex
 TARGET_EXE_NAME := gwswex
-TARGET_BASENAME_F2PY := gwswex_pywrapper
+TARGET_BASENAME_F2PY := gwswex_f2pywrapper
 
 # Define targets with paths
 TARGET_LIB_F2PY := $(addprefix $(OUT_LIB_PATH), $(TARGET_BASENAME_F2PY).cpython-$(PY_VERSION)-$(SYS_ARCH)-$(OS_TYPE).so)
@@ -150,7 +150,7 @@ $(TARGET_LIB_F2PY): $(OBJS)
 
 
 # Compile the (dynamic) library with OpenMP
-$(TARGET_LIB): $(OBJS) $(SRC)
+$(TARGET_LIB): $(OBJS) $(SRC_WRAPPER)
 	$(FC) -shared -o $@ $^ \
 		$(INCLUDES) -I$(SRC_MODULES_PATH) \
 		$(LIB_PATHS) $(LIBS) -lgomp \
@@ -192,7 +192,7 @@ $(TARGET_LIB_F2PY_PARALLEL): $(OBJS)
 		$(OUT_LIB_PATH)/$(TARGET_BASENAME_F2PY)_parallel.cpython-$(PY_VERSION)-$(SYS_ARCH)-$(OS_TYPE).so
 
 # Compile the (dynamic) library with OpenMP
-$(TARGET_LIB_PARALLEL): $(OBJS) $(SRC)
+$(TARGET_LIB_PARALLEL): $(OBJS) $(SRC_WRAPPER)
 	$(FC) -shared -o $@ $^ \
 		$(INCLUDES) -I$(SRC_MODULES_PATH) \
 		$(LIB_PATHS) $(LIBS) -lgomp \
@@ -234,7 +234,7 @@ $(TARGET_LIB_F2PY_SERIAL): $(OBJS)
 		$(OUT_LIB_PATH)/$(TARGET_BASENAME_F2PY)_serial.cpython-$(PY_VERSION)-$(SYS_ARCH)-$(OS_TYPE).so
 
 # Compile the (dynamic) library without OpenMP
-$(TARGET_LIB_SERIAL): $(OBJS) $(SRC)
+$(TARGET_LIB_SERIAL): $(OBJS) $(SRC_WRAPPER)
 	$(FC) -shared -o $@ $^ \
 		$(INCLUDES) -I$(SRC_MODULES_PATH) \
 		$(LIB_PATHS) $(LIBS) \
@@ -277,7 +277,7 @@ $(DEBUG_TARGET_LIB_F2PY): $(OBJS)
 		$(OUT_LIB_PATH)/$(TARGET_BASENAME_F2PY)_debugger.cpython-$(PY_VERSION)-$(SYS_ARCH)-$(OS_TYPE).so
 
 # Compile the (dynamic) library with OpenMP
-$(DEBUG_TARGET_LIB): $(OBJS) $(SRC)
+$(DEBUG_TARGET_LIB): $(OBJS) $(SRC_WRAPPER)
 	$(FC) -shared -o $@ $^ \
 		$(INCLUDES) -I$(SRC_MODULES_PATH) \
 		$(LIB_PATHS) $(LIBS) -lgomp \
@@ -319,7 +319,7 @@ $(DEBUG_TARGET_LIB_F2PY_PARALLEL): $(OBJS)
 		$(OUT_LIB_PATH)/$(TARGET_BASENAME_F2PY)_parallel_debugger.cpython-$(PY_VERSION)-$(SYS_ARCH)-$(OS_TYPE).so
 
 # Compile the (dynamic) library with OpenMP
-$(DEBUG_TARGET_LIB_PARALLEL): $(OBJS) $(SRC)
+$(DEBUG_TARGET_LIB_PARALLEL): $(OBJS) $(SRC_WRAPPER)
 	$(FC) -shared -o $@ $^ \
 		$(INCLUDES) -I$(SRC_MODULES_PATH) \
 		$(LIB_PATHS) $(LIBS) -lgomp \
@@ -361,7 +361,7 @@ $(DEBUG_TARGET_LIB_F2PY_SERIAL): $(OBJS)
 		$(OUT_LIB_PATH)/$(TARGET_BASENAME_F2PY)_serial_debugger.cpython-$(PY_VERSION)-$(SYS_ARCH)-$(OS_TYPE).so
 
 # Compile the (dynamic) library without OpenMP
-$(DEBUG_TARGET_LIB_SERIAL): $(OBJS) $(SRC)
+$(DEBUG_TARGET_LIB_SERIAL): $(OBJS) $(SRC_WRAPPER)
 	$(FC) -shared -o $@ $^ \
 		$(INCLUDES) -I$(SRC_MODULES_PATH) \
 		$(LIB_PATHS) $(LIBS) \

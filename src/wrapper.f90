@@ -1,11 +1,13 @@
 MODULE GWSWEX
-	USE model , ONLY: build, init_ts, solve_e !, resolve_ts
+
+	USE model, ONLY: build, init_ts, solve_e   !, resolve_ts
 
 	IMPLICIT NONE
 
     INTEGER, PARAMETER :: STRLEN = 256
 
     CONTAINS
+    
     
     SUBROUTINE init(config_path, gw_ini, sw_ini)
 
@@ -15,6 +17,7 @@ MODULE GWSWEX
         REAL(8), DIMENSION(:), INTENT(IN) :: gw_ini, sw_ini
 
         CHARACTER(LEN=STRLEN) :: Fyaml_path
+
 
         Fyaml_path = TRIM(ADJUSTL(config_path))
 
