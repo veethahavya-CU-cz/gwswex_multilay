@@ -5,7 +5,7 @@ __pycache__/
 
 lib/
 bin/
-src/f2py_scratch
+src/.f2py_scratch
 src/.archive
 
 test/runtime/

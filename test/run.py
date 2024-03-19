@@ -12,11 +12,11 @@ import time
 # %%
 os.environ['OMP_NUM_THREADS'] = str(psutil.cpu_count(logical = False))
 
-sys.path.append(os.path.abspath('lib/'))
-from gwswex_wrapper import gwswex as GWSWEX
+# sys.path.append(os.path.abspath('lib/'))
+from gwswex_f2pywrapper import gwswex as GWSWEX
 
 
-Fyaml = create_string_buffer(b'/home/gwswex_dev/GWSWEX/multilay/gwswex.yml', 256)
+# Fyaml = create_string_buffer(b'/home/gwswex_dev/GWSWEX/multilay/gwswex.yml', 256)
 
 # %%
 def plot(elem, nts_ll, nts_ul, tick_res=24, nlay=1, plotWlev=True, plotPrec=True, plotDis=True, plotBal=True, savefig=True, dDPI=90, pDPI=1600, alpha_scatter=0.7, scatter_size=3, format='jpg'):
@@ -223,7 +223,7 @@ fwrite('p.ip', p)
 fwrite('et.ip', et)
 
 #%%
-GWSWEX.init(os.path.abspath('gwswex.yml'), gw_ini, sw_ini)
+GWSWEX.init(os.path.abspath('test/gwswex.yml'), gw_ini, sw_ini)
 
 GWSWEX.run()
 
