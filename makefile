@@ -191,7 +191,7 @@ _prep_build:
 	cp $(oSRC_WRAPPER) $(BUILD_PATH)
 
 
-_build: $(OBJS)
+_build: $(OBJS) $(TARGET_LIB_F2PY) $(TARGET_LIB) $(TARGET_EXE)
 $(OBJS): $(SRC_MODULES)
 	cd $(BUILD_PATH) && \
 		$(FC) -c $(SRC_MODULE_NAMES) $(INCLUDES) $(LD_FLAGS) $(FFLAGS)
