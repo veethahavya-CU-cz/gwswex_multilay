@@ -56,7 +56,7 @@ F2PYFLAGS_DEBUG := --debug-capi
 
 
 # Define include paths
-INCLUDES := -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/
+INCLUDES := -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/include/fgsl/ -I.
 
 
 # Define library paths
@@ -77,8 +77,6 @@ export NPY_DISTUTILS_APPEND_FLAGS = 1
 # Define dynamic variables
 # Define build path
 BUILD_PATH = ./build/$(CASE)
-
-INCLUDES += -I$(BUILD_PATH)
 
 # Define source files with paths
 oSRC_MODULES := $(addprefix $(SRC_MODULES_PATH), $(SRC_MODULE_NAMES))
