@@ -5,6 +5,7 @@ __pycache__/
 
 lib/
 bin/
+build/
 src/.f2py_scratch
 src/.archive
 
