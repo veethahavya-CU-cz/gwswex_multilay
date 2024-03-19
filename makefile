@@ -40,9 +40,9 @@ SRC_WRAPPER_NAMES := wrapper.f90
 
 
 # Define target names
-TARGET_LIB_NAME := libgwswex
-TARGET_EXE_NAME := gwswex
-TARGET_TAG_F2PY := gwswex_f2pywrapper
+TARGET_LIB_TAG := libgwswex
+TARGET_EXE_TAG := gwswex
+TARGET_F2PY_TAG := gwswex_f2pywrapper
 
 
 # Define flags
@@ -92,10 +92,13 @@ OBJ_NAMES = $(SRC_MODULE_NAMES:.f90=.o)
 OBJS := $(BUILD_PATH)/$(OBJ_NAMES)
 
 # Define target names
-TARGET_BASENAME_F2PY = $(TARGET_TAG_F2PY)_$(subst /,_,$(CASE))
+TARGET_BASENAME_F2PY = $(TARGET_F2PY_TAG)_$(subst /,_,$(CASE))
 TARGET_LIB_F2PY = $(addprefix $(OUT_LIB_PATH), $(TARGET_BASENAME_F2PY).cpython-$(PY_VERSION)-$(SYS_ARCH)-$(OS_TYPE).so)
-TARGET_LIB = $(addprefix $(OUT_LIB_PATH), $(TARGET_LIB_NAME)_$(subst /,_,$(CASE)).so)
-TARGET_EXE = $(addprefix $(OUT_BIN_PATH), $(TARGET_EXE_NAME)_$(subst /,_,$(CASE)))
+
+TARGET_LIB_NAME = $(TARGET_LIB_TAG)_$(subst /,_,$(CASE)).so
+TARGET_EXE_NAME = $(TARGET_EXE_TAG)_$(subst /,_,$(CASE))
+TARGET_LIB = $(addprefix $(OUT_LIB_PATH), $(TARGET_LIB_NAME))
+TARGET_EXE = $(addprefix $(OUT_BIN_PATH), $(TARGET_EXE_NAME))
 
 
 
