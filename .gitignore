@@ -1,24 +1,32 @@
-.dependencies/*/
-.archive/
 .vscode/
-__pycache__/
+.archive/
+
+build/
+
+**/__pycache__/
+**/.f2py_scratch/
 
 lib/
 bin/
-build/
-src/.f2py_scratch
+include/
+
+
 src/.archive
 
-test/runtime/
+**/runtime/
 
 *.log
+
 *.so
 *.mod
 *.o
+
 *.ip
 *.op
+
 *.pyc
 *.pyd
+
 *.jpg
 *.png
 *.svg

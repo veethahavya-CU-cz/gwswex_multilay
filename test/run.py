@@ -12,7 +12,7 @@ import time
 # %%
 os.environ['OMP_NUM_THREADS'] = str(psutil.cpu_count(logical = False))
 
-# sys.path.append(os.path.abspath('lib/'))
+sys.path.append(os.path.abspath('../build/lib/'))
 from gwswex_f2pywrapper import gwswex as GWSWEX
 
 
@@ -223,7 +223,7 @@ fwrite('p.ip', p)
 fwrite('et.ip', et)
 
 #%%
-GWSWEX.init(os.path.abspath('test/gwswex.yml'), gw_ini, sw_ini)
+GWSWEX.init(os.path.abspath('./gwswex.yml'), gw_ini, sw_ini)
 
 GWSWEX.run()
 

@@ -1,19 +1,34 @@
 MODULE GWSWEX
-
 	USE model, ONLY: build, init_ts, solve_e   !, resolve_ts
 
-	IMPLICIT NONE
+    IMPLICIT NONE
 
     INTEGER, PARAMETER :: STRLEN = 256
 
     CONTAINS
     
     
-    SUBROUTINE init(config_path, gw_ini, sw_ini)
-
+    SUBROUTINE init_from_config(config_path)
         IMPLICIT NONE
 
         CHARACTER(LEN=*), INTENT(IN) :: config_path
+        CHARACTER(LEN=STRLEN) :: Fyaml_path
+
+        Fyaml_path = TRIM(ADJUSTL(config_path))
+
+        CALL build(TRIM(Fyaml_path))
+
+        CALL init_ts(auto_advance=.FALSE., first_run=.TRUE.)
+
+        CALL solve_e()
+
+    END SUBROUTINE init_from_config
+
+
+
+    SUBROUTINE init(gw_ini, sw_ini)
+        IMPLICIT NONE
+
         REAL(8), DIMENSION(:), INTENT(IN) :: gw_ini, sw_ini
 
         CHARACTER(LEN=STRLEN) :: Fyaml_path
@@ -29,6 +44,7 @@ MODULE GWSWEX
         CALL solve_e() !#FIXME: DO NOT SOLVE HERE, JUST INITIALIZE
 
     END SUBROUTINE init
+
 
 ! #TODO: add a function to get nelements, tstart, and tstop
 

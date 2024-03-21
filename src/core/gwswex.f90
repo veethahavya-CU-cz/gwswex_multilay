@@ -7,6 +7,8 @@ MODULE wrapper
     INTEGER, PARAMETER :: STRLEN = 256
 
     CONTAINS
+
+    
     SUBROUTINE init(config_path)
 
         IMPLICIT NONE
@@ -83,8 +85,19 @@ PROGRAM GWSWEX
 
 	IMPLICIT NONE
 
+    CHARACTER(LEN=256) :: Fyaml_path
+
+
+    IF (COMMAND_ARGUMENT_COUNT() == 0) THEN
+        PRINT *, "Usage: gwswex <config.yml>"
+        ERROR STOP "ERROR: config file not provided/invalid."
+    ELSE
+        CALL GET_COMMAND_ARGUMENT(1, Fyaml_path)
+    END IF
+
+
     ! #TODO: take this as an argument 
-    CALL init('/home/gwswex_dev/GWSWEX/multilay/test.yml')
+    CALL init(Fyaml_path)
 
     CALL run()
 
