@@ -1,0 +1,302 @@
+Domain:
+  space:
+    ne: 10
+    nl: 3
+    top: !!python/object/apply:numpy.core.multiarray._reconstruct
+      args: [&id001 !!python/name:numpy.ndarray '', !!python/tuple [0], !!binary "Yg==\n"]
+      state: !!python/tuple
+      - 1
+      - !!python/tuple
+        - 10
+      - &id002 !!python/object/apply:numpy.dtype
+        args: [f8, false, true]
+        state: !!python/tuple
+        - 3
+        - <
+        - null
+        - null
+        - null
+        - -1
+        - -1
+        - 0
+      - false
+      - !!binary |
+        AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+        AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8=
+    bot: !!python/object/apply:numpy.core.multiarray._reconstruct
+      args: [*id001, !!python/tuple [0], !!binary "Yg==\n"]
+      state: !!python/tuple
+      - 1
+      - !!python/tuple
+        - 3
+        - 10
+      - *id002
+      - false
+      - !!binary |
+        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        AAAAAAAAAAAAAAAA
+    layers:
+      layer1:
+        isactive: !!python/object/apply:numpy.core.multiarray._reconstruct
+          args: [*id001, !!python/tuple [0], !!binary "Yg==\n"]
+          state: !!python/tuple
+          - 1
+          - !!python/tuple []
+          - &id003 !!python/object/apply:numpy.dtype
+            args: [i8, false, true]
+            state: !!python/tuple
+            - 3
+            - <
+            - null
+            - null
+            - null
+            - -1
+            - -1
+            - 0
+          - false
+          - !!binary |
+            CgAAAAAAAAA=
+        vanG:
+          alpha: 0
+          n: 0
+          theta_r: 0
+          theta_s: 0
+        ks: !!python/object/apply:numpy.core.multiarray._reconstruct
+          args: [*id001, !!python/tuple [0], !!binary "Yg==\n"]
+          state: !!python/tuple
+          - 1
+          - !!python/tuple
+            - 10
+          - *id002
+          - false
+          - !!binary |
+            AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+            AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8=
+        porosity: !!python/object/apply:numpy.core.multiarray._reconstruct
+          args: [*id001, !!python/tuple [0], !!binary "Yg==\n"]
+          state: !!python/tuple
+          - 1
+          - !!python/tuple
+            - 10
+          - *id002
+          - false
+          - !!binary |
+            AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+            AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8=
+      layer2:
+        isactive: !!python/object/apply:numpy.core.multiarray._reconstruct
+          args: [*id001, !!python/tuple [0], !!binary "Yg==\n"]
+          state: !!python/tuple
+          - 1
+          - !!python/tuple []
+          - *id003
+          - false
+          - !!binary |
+            CgAAAAAAAAA=
+        vanG:
+          alpha: 0
+          n: 0
+          theta_r: 0
+          theta_s: 0
+        ks: !!python/object/apply:numpy.core.multiarray._reconstruct
+          args: [*id001, !!python/tuple [0], !!binary "Yg==\n"]
+          state: !!python/tuple
+          - 1
+          - !!python/tuple
+            - 10
+          - *id002
+          - false
+          - !!binary |
+            AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+            AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8=
+        porosity: !!python/object/apply:numpy.core.multiarray._reconstruct
+          args: [*id001, !!python/tuple [0], !!binary "Yg==\n"]
+          state: !!python/tuple
+          - 1
+          - !!python/tuple
+            - 10
+          - *id002
+          - false
+          - !!binary |
+            AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+            AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8=
+      layer3:
+        isactive: !!python/object/apply:numpy.core.multiarray._reconstruct
+          args: [*id001, !!python/tuple [0], !!binary "Yg==\n"]
+          state: !!python/tuple
+          - 1
+          - !!python/tuple []
+          - *id003
+          - false
+          - !!binary |
+            CgAAAAAAAAA=
+        vanG:
+          alpha: 0
+          n: 0
+          theta_r: 0
+          theta_s: 0
+        ks: !!python/object/apply:numpy.core.multiarray._reconstruct
+          args: [*id001, !!python/tuple [0], !!binary "Yg==\n"]
+          state: !!python/tuple
+          - 1
+          - !!python/tuple
+            - 10
+          - *id002
+          - false
+          - !!binary |
+            AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+            AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8=
+        porosity: !!python/object/apply:numpy.core.multiarray._reconstruct
+          args: [*id001, !!python/tuple [0], !!binary "Yg==\n"]
+          state: !!python/tuple
+          - 1
+          - !!python/tuple
+            - 10
+          - *id002
+          - false
+          - !!binary |
+            AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+            AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8=
+  time:
+    dt: 3600
+    start: '20240322_183417'
+    stop: '20240322_183417'
+    current: 2024-03-22 18:34:17.981772
+    nts: 24
+Ini:
+  gw: !!python/object/apply:numpy.core.multiarray._reconstruct
+    args: [*id001, !!python/tuple [0], !!binary "Yg==\n"]
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 10
+    - *id002
+    - false
+    - !!binary |
+      AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+      AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8=
+  sw: !!python/object/apply:numpy.core.multiarray._reconstruct
+    args: [*id001, !!python/tuple [0], !!binary "Yg==\n"]
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 10
+    - *id002
+    - false
+    - !!binary |
+      AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+      AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8=
+  uz: null
+Meteo:
+  precip: !!python/object/apply:numpy.core.multiarray._reconstruct
+    args: [*id001, !!python/tuple [0], !!binary "Yg==\n"]
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 24
+      - 10
+    - *id002
+    - true
+    - !!binary |
+      AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+      AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAA
+      AAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAA
+      AAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAA
+      AADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAA
+      APA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA
+      8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADw
+      PwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/
+      AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+      AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAA
+      AAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAA
+      AAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAA
+      AADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAA
+      APA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA
+      8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADw
+      PwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/
+      AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+      AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAA
+      AAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAA
+      AAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAA
+      AADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAA
+      APA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA
+      8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADw
+      PwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/
+      AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+      AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAA
+      AAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAA
+      AAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAA
+      AADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAA
+      APA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA
+      8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADw
+      PwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/
+      AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+      AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/
+  pet: !!python/object/apply:numpy.core.multiarray._reconstruct
+    args: [*id001, !!python/tuple [0], !!binary "Yg==\n"]
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 24
+      - 10
+    - *id002
+    - true
+    - !!binary |
+      AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+      AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAA
+      AAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAA
+      AAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAA
+      AADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAA
+      APA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA
+      8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADw
+      PwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/
+      AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+      AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAA
+      AAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAA
+      AAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAA
+      AADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAA
+      APA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA
+      8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADw
+      PwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/
+      AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+      AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAA
+      AAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAA
+      AAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAA
+      AADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAA
+      APA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA
+      8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADw
+      PwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/
+      AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+      AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAA
+      AAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAA
+      AAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAA
+      AADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAA
+      APA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA
+      8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADw
+      PwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/
+      AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+      AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/
+  aet: null
+  evap: null
+  temp: null
+  rh: null
+  wind: null
+  rad_in: null
+  rad_out: null
+Solver:
+  verbose: false
+  omp_cores: '16'
+  integrator: null
+  nts_per_flux: null
+Paths:
+  output: /home/gwswex_dev/GWSWEX/multilay/output
+  input: /home/gwswex_dev/GWSWEX/multilay/input
+  logfile: ./gwswex_pywrapper.log
+  config: /home/gwswex_dev/GWSWEX/multilay/config.yaml
+  f2pywrapper: /opt/gwswex/lib/gwswex_f2pywrapper.cpython-39-x86_64-linux-gnu.so
+IO:
+  verbose: true
+  debug: false

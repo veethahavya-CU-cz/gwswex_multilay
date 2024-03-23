@@ -2,6 +2,8 @@ import importlib
 import sys
 import os
 
+import numpy as np
+
 
 lib_paths = [
     "/opt/gwswex/lib/",
@@ -14,7 +16,7 @@ try:
     sys.path.append(os.path.abspath("../../lib/"))
     sys.path.append(os.path.abspath("../../build/lib/"))
 
-    from gwswex_f2pywrapper import gwswex
+    import gwswex_f2pywrapper as f2py_wrapper
     
 except ImportError:
     raise ModuleNotFoundError(
@@ -31,26 +33,13 @@ def __custom_yaml_dumper(dumper, data):
     else:
         return dumper.represent_sequence("tag:yaml.org,2002:seq", data, flow_style=True)
 
+def numpy_tostring_representer(dumper, data):
+    return dumper.represent_scalar('tag:yaml.org,2002:str', np.array2string(data))
 
+yaml.SafeDumper.add_representer(np.ndarray, numpy_tostring_representer)
 yaml.add_representer(list, __custom_yaml_dumper)
 
 
 def re_import(module_name: str, module_path: str) -> None:
     sys.path.append(os.path.dirname(module_path))
     importlib.reload(sys.modules[module_name])
-
-
-def in_ipynb():
-    try:
-        cfg = get_ipython().config 
-        if cfg['IPKernelApp']['parent_appname'] == 'ipython-notebook':
-            return True
-        else:
-            return False
-    except NameError:
-        return False
-
-if in_ipynb():
-    exit_fn = exit
-else:
-    exit_fn = sys.exit
