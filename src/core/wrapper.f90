@@ -34,7 +34,7 @@ MODULE GWSWEX
         CHARACTER(LEN=STRLEN) :: Fyaml_path
 
 
-        Fyaml_path = TRIM(ADJUSTL(config_path))
+        Fyaml_path = TRIM(ADJUSTL(Fyaml_path))
 
 
         CALL build(TRIM(Fyaml_path))

@@ -16,6 +16,8 @@ from .importHandler import re_import
 strptime = datetime.strptime
 strftime = datetime.strftime
 
+# TODO: implement not_proofed from __setarrt__ to initiate __proof() when values are changed for all classes
+# TODO: proof the values of the inputs too (e.g. [0 < theta_r < theta_s < 1])
 
 # fmt: off
 @dataclass
@@ -77,7 +79,6 @@ class spatialDomain:
         self.__initialised = False
         self.__fprecesion = None
 
-    
     def __proof(self) -> None:
         try:
             self.ne = int(self.ne)
@@ -88,7 +89,7 @@ class spatialDomain:
         try:
             self.top = np.array(self.top, dtype=self.__fprecesion, order="F")
         except ValueError:
-            print(f"Number of model layers [Domain.space.nlayers] needs to be an integer")
+            print(f"Number of model layers [Domain.space.nl] needs to be an integer")
             sys.exit(1)
         ne, nl = self.ne, self.nl
 
@@ -107,10 +108,14 @@ class spatialDomain:
                 sys.exit(1)
 
         if not len(self.layers) == nl:
-            print(f"Definition of layers does not match the number of defined layers: Domain.space.nlayers {nl}.")
+            print(f"Definition of layers does not match the number of defined layers: Domain.space.nl {nl}.")
             sys.exit(1)
 
         for lidx in range(nl):
+            self.layers[lidx].isactive = np.array(self.layers[lidx].isactive, dtype=self.__fprecesion, order="F")
+            if not self.layers[lidx].isactive.size == ne:
+                print(f"Shape of isactive for layer[{lidx}] does not match Domain.space.ne.")
+                sys.exit(1)
             self.layers[lidx].ks = np.array(self.layers[lidx].ks, dtype=self.__fprecesion, order="F")
             if not self.layers[lidx].ks.size == ne:
                 print(f"Shape of ks for layer[{lidx}] does not match Domain.space.ne.")
@@ -130,9 +135,10 @@ class spatialDomain:
 
 @dataclass
 class temporalDomain:
-    #TODO, #FIXME: implement variable time-stepping:
+    # TODO: #FIXME: implement variable time-stepping:
     #       1. allow dynamic definition of dt and nts => results can only be stored in a dynamic array in py (np.append)
     #       2. split dt into global_dt and local_dt. exchange at dynamic local_dt but store values at global_dt
+    # TODO: use the not_proofed status from __setarrt__ to initiate __proof() when values are changed
     dt:              timedelta       # Time step size [datetime.timedelta]
     start:           datetime        # Start time [datetime.datetime]
     stop:            datetime        # End time [datetime.datetime]
@@ -159,6 +165,9 @@ class temporalDomain:
         self.__status = {}
         self.__status['proofed'] = False
         self.__status['initialised'] = False
+
+        self._current = 0
+        self.current = self.start
 
     def __proof(self) -> None:
         if type(self.start) in [datetime, str]:
@@ -222,9 +231,6 @@ class temporalDomain:
     def init(self) -> None:
         if not self.__status['proofed']:
             self.__proof()
-        
-        self._current = 0
-        self.current = self.start
 
         self.__status['initialised'] = True
         
@@ -281,14 +287,14 @@ class meteorologicalForcings:
         self.rad_out = rad_out
 
 @dataclass
-class boundaryCondition:
+class boundaryConditions:
     name:       str
     type:       str
     value:      np.ndarray
     time:       np.ndarray      # [s] since start
 
 @dataclass
-class externalForcing:
+class externalForcings:
     name:       str
     type:       str
     value:      np.ndarray
@@ -335,45 +341,53 @@ class gwswexIO:
 
 
 class Model:
+# TODO: Implement a method to display model properties
     """Top-Level Class for the GWSWEX model."""
-    @staticmethod
-    def __infer_config_keys() -> dict:
-        cnf_keys: dict = {}
-        cnf_keys['Domain'] = {}
-        cnf_keys['Domain']['space'] = {'.': [field.name for field in fields(spatialDomain)]}
-        cnf_keys['Domain']['time'] = {'.': [field.name for field in fields(temporalDomain)]}
-        cnf_keys['Domain']['space']['layer'] = {'.': [field.name for field in fields(soilLayer)]}
-        cnf_keys['Domain']['space']['layer']['vanG'] = [field.name for field in fields(vanGenuchten)]
-        cnf_keys['Ini'] = [field.name for field in fields(initialConditions)]
-        cnf_keys['Meteo'] = [field.name for field in fields(meteorologicalForcings)]
-        cnf_keys['Boundaries'] = [field.name for field in fields(boundaryCondition)]
-        cnf_keys['ExtForcings'] = [field.name for field in fields(externalForcing)]
-        cnf_keys['Solver'] = [field.name for field in fields(solverSettings)]
-        cnf_keys['Paths'] = [field.name for field in fields(gwswexPaths)]
-        cnf_keys['IO'] = [field.name for field in fields(gwswexIO)]
-        return cnf_keys
 
-    @staticmethod
-    def __define_required_configurations() -> dict:
-        cnf_req_keys = {'.': ['Domain', 'Ini', 'Meteo']}
-        cnf_req_keys['Domain'] = {'.': ['space', 'time']}
-        cnf_req_keys['Domain']['space'] = {'.': ['ne', 'nl', 'top', 'bot']}
-        cnf_req_keys['Domain']['space']['layer'] = {'.': ["isactive", 'vanG', 'ks', 'porosity']}
-        cnf_req_keys['Domain']['space']['layer']['vanG'] = [
+    def __infer_config_keys(self):
+        def prune(d: dict):
+            for key, value in list(d.items()):
+                if isinstance(value, dict):
+                    prune(value)
+                if key.startswith('_'):
+                    del d[key]
+
+        self.__cnf_keys: dict = {}
+        self.__cnf_keys['Domain'] = {}
+        self.__cnf_keys['Domain']['space'] = {'.': [field.name for field in fields(spatialDomain)]}
+        self.__cnf_keys['Domain']['time'] = {'.': [field.name for field in fields(temporalDomain)]}
+        self.__cnf_keys['Domain']['space']['layers'] = {'.': [field.name for field in fields(soilLayer)]}
+        self.__cnf_keys['Domain']['space']['layers']['.'].remove('vanG')
+        self.__cnf_keys['Domain']['space']['layers']['vanG'] = [field.name for field in fields(vanGenuchten)]
+        self.__cnf_keys['Ini'] = [field.name for field in fields(initialConditions)]
+        self.__cnf_keys['Meteo'] = [field.name for field in fields(meteorologicalForcings)]
+        self.__cnf_keys['Boundaries'] = [field.name for field in fields(boundaryConditions)]
+        self.__cnf_keys['ExtForcings'] = [field.name for field in fields(externalForcings)]
+        self.__cnf_keys['Solver'] = [field.name for field in fields(solverSettings)]
+        self.__cnf_keys['Paths'] = [field.name for field in fields(gwswexPaths)]
+        self.__cnf_keys['IO'] = [field.name for field in fields(gwswexIO)]
+
+        # self.__cnf_keys = prune(self.__cnf_keys)
+
+    def __define_required_configurations(self):
+        self.__cnf_req_keys: dict = {'.': ['Domain', 'Ini', 'Meteo']}
+        self.__cnf_req_keys['Domain'] = {'.': ['space', 'time']}
+        self.__cnf_req_keys['Domain']['space'] = {'.': ['ne', 'nl', 'top', 'bot']}
+        self.__cnf_req_keys['Domain']['space']['layers'] = {'.': ["isactive", 'vanG', 'ks', 'porosity']}
+        self.__cnf_req_keys['Domain']['space']['layers']['vanG'] = [
             'alpha',
             'n',
             'theta_r',
             'theta_s',
         ]
-        cnf_req_keys['Domain']['time'] = ['dt', 'start', 'stop']
-        cnf_req_keys['Ini'] = ['gw', 'sw']
-        cnf_req_keys['Meteo'] = ["precip", "pet"]
-        cnf_req_keys['Boundaries'] = ['type', 'value', 'time']
-        cnf_req_keys['ExtForcings'] = ['type', 'value', 'time']
-        cnf_req_keys['Solver'] = []
-        cnf_req_keys['Paths'] = []
-        cnf_req_keys['IO'] = []
-        return cnf_req_keys
+        self.__cnf_req_keys['Domain']['time'] = ['dt', 'start', 'stop']
+        self.__cnf_req_keys['Ini'] = ['gw', 'sw']
+        self.__cnf_req_keys['Meteo'] = ["precip", "pet"]
+        self.__cnf_req_keys['Boundaries'] = ['type', 'value', 'time']
+        self.__cnf_req_keys['ExtForcings'] = ['type', 'value', 'time']
+        self.__cnf_req_keys['Solver'] = []
+        self.__cnf_req_keys['Paths'] = []
+        self.__cnf_req_keys['IO'] = []
         
     def __init__(
         self,
@@ -417,8 +431,8 @@ class Model:
         self.Domain.space.__fprecesion = self.fprecesion
 
         self.config: dict = {}
-        self.__cnf_keys: dict = Model.__infer_config_keys()
-        self.__cnf_req_keys: dict = Model.__define_required_configurations()
+        self.__infer_config_keys()
+        self.__define_required_configurations()
 
         self.config_file: str = os.path.abspath(fpath)
         self.wd: str = os.path.dirname(self.config_file)
@@ -491,24 +505,19 @@ class Model:
                 log.error(f"Model [Domain.time] configuration '{key}' was not found in {config_file}.")
                 return False
 
-        for layer in [f"layer{lidx}" for lidx in range(1, config['Domain']["nlayers"] + 1)]:
-            try:
-                config['Domain'][key]
-                for key in config_req_keys['Domain']['space']['layer']['.']:
-                    try:
-                        config[layer][key]
-                        for key in config_req_keys['Domain']['space']['layer']['vanG']:
-                            try:
-                                config[layer]['vanG'][key]
-                            except KeyError:
-                                log.error(f"Configuration [vanG.{key}] for '{layer}' was not found in {config_file}.")
-                                return False
-                    except KeyError:
-                        log.error(f"Configuration [{key}] for '{layer}' was not found in {config_file}.")
-                        return False
-            except KeyError:
-                log.error(f"Configuration for '{layer}' was not found in {config_file}.")
-                return False
+        for layer in [f"layer{lidx}" for lidx in range(1, config['Domain']['space']['nl'] + 1)]:
+            for key in config_req_keys['Domain']['space']['layers']['.']:
+                try:
+                    config['Domain']['space']['layers'][layer][key]
+                    for key in config_req_keys['Domain']['space']['layers']['vanG']:
+                        try:
+                            config['Domain']['space']['layers'][layer]['vanG'][key]
+                        except KeyError:
+                            log.error(f"Configuration [vanG.{key}] for '{layer}' was not found in {config_file}.")
+                            return False
+                except KeyError:
+                    log.error(f"Configuration [{key}] for '{layer}' was not found in {config_file}.")
+                    return False
 
         for key in config_req_keys['Ini']:
             try:
@@ -534,44 +543,17 @@ class Model:
         """
         log = self.log
         config = self.config
-
-        layer_keys = [f"layer{lidx}" for lidx in range(1, config['Domain']["nlayers"] + 1)]
-        layers = []
-        for layer in layer_keys:
-            layers.append(soilLayer())
+        config_keys = self.__cnf_keys
+        config_req_keys = self.__cnf_req_keys
 
         self.Domain = gwswexDomain()
-        for key in self.__cnf_keys['Domain']['.']:
-            try:
-                setattr(self.Domain, key, config['Domain'][key])
-            except KeyError:
-                if not key in self.__cnf_req_keys['Domain']:
-                    log.warning(f"Model [Domain] configuration '{key}' was not found in {self.Paths.config}.")
-                else:
-                    log.error(f"Model [Domain] configuration '{key}' was not found in {self.Paths.config}.")
-                    raise
-            except ValueError:
-                if (
-                    type(config['Domain'][key]) != type(getattr(self.Domain, key))
-                    and type(config['Domain'][key]) == str
-                ):
-                    log.debug(
-                        f"Expected type {type(getattr(self.Domain, key))} for [model.Domain.{key}]. Trying to read from file, assuming filename was provided."
-                    )
-                    try:
-                        data = np.loadtxt(config['Domain'][key])
-                        setattr(self.Domain, key, data)
-                    except:
-                        log.error(
-                            f"Unable to read model [Domain] configuration '{key}' either as {type(getattr(self.Domain, key))} or as a file with np.loadtxt."
-                        )
-                        raise
 
-        for key in self.__cnf_keys['Domain']['space']['.']:
+        for key in config_keys['Domain']['space']['.']:
             try:
+                config['Domain']['space'][key]
                 setattr(self.Domain.space, key, config['Domain']['space'][key])
             except KeyError:
-                if not key in self.__cnf_req_keys['Domain']['space']['.']:
+                if not key in config_req_keys['Domain']['space']['.']:
                     log.warning(f"Model [Domain.space] configuration '{key}' was not found in {self.Paths.config}.")
                 else:
                     log.error(f"Model [Domain.space] configuration '{key}' was not found in {self.Paths.config}.")
@@ -593,15 +575,16 @@ class Model:
                         )
                         raise
 
-        for key in self.__cnf_keys['Domain']['time']:
+        for key in config_keys['Domain']['time']['.']:
             try:
+                config['Domain']['time'][key]
                 setattr(self.Domain.time, key, config['Domain']['time'][key])
             except KeyError:
-                if not key in self.__cnf_req_keys['Domain']['time']:
+                if not key in config_req_keys['Domain']['time']:
                     log.warning(f"Model [Domain.time] configuration '{key}' was not found in {self.Paths.config}.")
                 else:
                     log.error(f"Model [Domain.time] configuration '{key}' was not found in {self.Paths.config}.")
-                raise
+                    raise
             except ValueError:
                 if key == 'dt' and type(config['Domain']['time'][key]) in [
                     int,
@@ -653,62 +636,62 @@ class Model:
                     )
                     raise
 
-        for layer in layers:
-            for key in self.__cnf_keys['Domain']['space']['layer']['.']:
+        layer_keys = [f"layer{lidx}" for lidx in range(1, config['Domain']['space']['nl'] + 1)]
+        layers = []
+        for layer in layer_keys:
+            layers.append(soilLayer())
+        self.Domain.space.layers = layers
+        for lidx, layer in enumerate(layers):
+            layer_config = config['Domain']['space']['layers'][layer_keys[lidx]]
+            for key in config_keys['Domain']['space']['layers']['.']:
                 try:
-                    setattr(layer, key, config['Domain']['space']['layer'][key])
-                    for key in self.__cnf_keys['Domain']['space']['layer']['vanG']:
-                        try:
-                            setattr(
-                                layer.vanG,
-                                key,
-                                config['Domain']['space']['layer']['vanG'][key],
-                            )
-                        except KeyError:
-                            if not key in self.__cnf_req_keys['Domain']['space']['layer']['vanG']:
-                                log.warning(
-                                    f"Model [Domain.space.layer] configuration '{key}' was not found in {self.Paths.config}."
-                                )
-                            else:
-                                log.error(
-                                    f"Model [Domain.space.layer] configuration '{key}' was not found in {self.Paths.config}."
-                                )
-                                raise
-                        except ValueError:
-                            log.error(
-                                f"Expected type {type(getattr(layer.vanG, key))} for [model.Domain.space.layer.vanG.{key}] but got {type(config['Domain']['space']['layer']['vanG'][key])}."
-                            )
-                            raise
-
+                    layer_config[key]
+                    setattr(layer, key, layer_config[key])
                 except KeyError:
-                    if not key in self.__cnf_req_keys['Domain']['space']['layer']['.']:
+                    if not key in config_req_keys['Domain']['space']['layers']['.']:
                         log.warning(f"Model [Domain] configuration '{key}' was not found in {self.Paths.config}.")
                     else:
                         log.error(f"Model [Domain] configuration '{key}' was not found in {self.Paths.config}.")
                         raise
                 except ValueError:
                     if (
-                        type(config['Domain']['space']['layer'][key]) != type(getattr(self.Domain.space.layer, key))
-                        and type(config['Domain']['space']['layer'][key]) == str
+                        type(config['Domain']['space']['layers'][key]) != type(getattr(self.Domain.space.layer, key))
+                        and type(config['Domain']['space']['layers'][key]) == str
                     ):
                         log.debug(
                             f"Expected type {type(getattr(self.Domain.space.layer, key))} for [model.Domain.space.layer.{key}]. Trying to read from file, assuming filename was provided."
                         )
-                        try:
-                            data = np.loadtxt(config['Domain']['space']['layer'][key])
-                            setattr(layer, key, data)
-                        except:
-                            log.error(
-                                f"Unable to read model [Domain] configuration '{key}' either as {type(getattr(self.Domain.space.layer, key))} or as a file with np.loadtxt."
-                            )
-                            raise
+            for key in config_keys['Domain']['space']['layers']['vanG']:
+                try:
+                    layer_config['vanG'][key]
+                    setattr(
+                        layer.vanG,
+                        key,
+                        layer_config['vanG'][key],
+                    )
+                except KeyError:
+                    if not key in config_req_keys['Domain']['space']['layers']['vanG']:
+                        log.warning(
+                            f"Model [Domain.space.layer] configuration '{key}' was not found in {self.Paths.config}."
+                        )
+                    else:
+                        log.error(
+                            f"Model [Domain.space.layer] configuration '{key}' was not found in {self.Paths.config}."
+                        )
+                        raise
+                except ValueError:
+                    log.error(
+                        f"Expected type {type(getattr(layer.vanG, key))} for [model.Domain.space.layer.vanG.{key}] but got {type(layer_config['vanG'][key])}."
+                    )
+                    raise
 
         self.Ini = initialConditions()
-        for key in self.__cnf_keys['Ini']:
+        for key in config_keys['Ini']:
             try:
+                config['Ini'][key]
                 setattr(self.Ini, key, config['Ini'][key])
             except KeyError:
-                if not key in self.__cnf_req_keys['Ini']:
+                if not key in config_req_keys['Ini']:
                     log.warning(f"Model [initial] configuration '{key}' was not found in {self.Paths.config}.")
                 else:
                     log.error(f"Model [initial] configuration '{key}' was not found in {self.Paths.config}.")
@@ -731,11 +714,12 @@ class Model:
                         raise
 
         self.Meteo = meteorologicalForcings()
-        for key in self.__cnf_keys['Meteo']:
+        for key in config_keys['Meteo']:
             try:
+                config['Meteo'][key]
                 setattr(self.Meteo, key, config['Meteo'][key])
             except KeyError:
-                if not key in self.__cnf_req_keys['Meteo']:
+                if not key in config_req_keys['Meteo']:
                     log.warning(f"Model [Meteo] configuration '{key}' was not found in {self.Paths.config}.")
                 else:
                     log.error(f"Model [Meteo] configuration '{key}' was not found in {self.Paths.config}.")
@@ -755,14 +739,16 @@ class Model:
                         raise
 
         self.Boundaries = {}
-        if config['Boundaries']:
-            for key, val in config['Boundaries'].items():
-                self.Boundaries[key] = boundaryCondition(name=key)
-                for key in self.__cnf_keys['Boundaries'][key]:
+        try:
+            config['Boundaries']
+            for key, value in config['Boundaries'].items():
+                self.Boundaries[key] = boundaryConditions(name=key)
+                for key in config_keys['Boundaries'][key]:
                     try:
-                        setattr(self.Boundaries[key], key, val[key])
+                        value[key]
+                        setattr(self.Boundaries[key], key, value[key])
                     except KeyError:
-                        if not key in self.__cnf_req_keys['Boundaries'][key]:
+                        if not key in config_req_keys['Boundaries'][key]:
                             log.warning(
                                 f"Model [Boundaries] configuration '{key}' was not found in {self.Paths.config}."
                             )
@@ -770,119 +756,141 @@ class Model:
                             log.error(f"Model [Boundaries] configuration '{key}' was not found in {self.Paths.config}.")
                             raise
                     except ValueError:
-                        if type(val[key]) != type(getattr(self.Boundaries[key], key)) and type(val[key]) == str:
+                        if type(value[key]) != type(getattr(self.Boundaries[key], key)) and type(value[key]) == str:
                             log.debug(
                                 f"Expected type {type(getattr(self.Boundaries[key], key))} for [model.Boundaries.{key}]. Trying to read from file, assuming filename was provided."
                             )
                             try:
-                                data = np.loadtxt(val[key])
+                                data = np.loadtxt(value[key])
                                 setattr(self.Boundaries[key], key, data)
                             except:
                                 log.error(
                                     f"Unable to read model [Boundaries] configuration '{key}' either as {type(getattr(self.Boundaries[key], key))} or as a file with np.loadtxt."
                                 )
                                 raise
+        except:
+            log.warning("No definitions for [model.boundaryConditions]")
 
         self.ExtForcings = {}
-        for key, value in config['ExtForcings'].items():
-            self.ExtForcings[key] = externalForcing(name=key)
-            for key in self.__cnf_keys['ExtForcings'][key]:
-                try:
-                    setattr(self.ExtForcings[key], key, value[key])
-                except KeyError:
-                    if not key in self.__cnf_req_keys['ExtForcings'][key]:
-                        log.warning(f"Model [ExtForcings] configuration '{key}' was not found in {self.Paths.config}.")
-                    else:
-                        log.error(f"Model [ExtForcings] configuration '{key}' was not found in {self.Paths.config}.")
-                        raise
-                except ValueError:
-                    if type(value[key]) != type(getattr(self.ExtForcings[key], key)) and type(value[key]) == str:
-                        log.debug(
-                            f"Expected type {type(getattr(self.ExtForcings[key], key))} for [model.ExtForcings.{key}]. Trying to read from file, assuming filename was provided."
-                        )
-                        try:
-                            data = np.loadtxt(value[key])
-                            setattr(self.ExtForcings[key], key, data)
-                        except:
-                            log.error(
-                                f"Unable to read model [ExtForcings] configuration '{key}' either as {type(getattr(self.ExtForcings[key], key))} or as a file with np.loadtxt."
-                            )
+        try:
+            config['ExtForcings']
+            for key, value in config['ExtForcings'].items():
+                self.ExtForcings[key] = externalForcings(name=key)
+                for key in config_keys['ExtForcings'][key]:
+                    try:
+                        value[key]
+                        setattr(self.ExtForcings[key], key, value[key])
+                    except KeyError:
+                        if not key in config_req_keys['ExtForcings'][key]:
+                            log.warning(f"Model [ExtForcings] configuration '{key}' was not found in {self.Paths.config}.")
+                        else:
+                            log.error(f"Model [ExtForcings] configuration '{key}' was not found in {self.Paths.config}.")
                             raise
+                    except ValueError:
+                        if type(value[key]) != type(getattr(self.ExtForcings[key], key)) and type(value[key]) == str:
+                            log.debug(
+                                f"Expected type {type(getattr(self.ExtForcings[key], key))} for [model.ExtForcings.{key}]. Trying to read from file, assuming filename was provided."
+                            )
+                            try:
+                                data = np.loadtxt(value[key])
+                                setattr(self.ExtForcings[key], key, data)
+                            except:
+                                log.error(
+                                    f"Unable to read model [ExtForcings] configuration '{key}' either as {type(getattr(self.ExtForcings[key], key))} or as a file with np.loadtxt."
+                                )
+                                raise
+        except:
+            log.warning("No definitions for [model.externalForcings]")
 
         self.Solver = solverSettings()
-        for key in self.__cnf_keys['Solver']:
-            try:
-                setattr(self.Solver, key, config['Solver'][key])
-            except KeyError:
-                if not key in self.__cnf_req_keys['Solver']:
-                    log.warning(f"Model [Solver] configuration '{key}' was not found in {self.Paths.config}.")
-                else:
-                    log.error(f"Model [Solver] configuration '{key}' was not found in {self.Paths.config}.")
-                    raise
-            except ValueError:
-                if (
-                    type(config['Solver'][key]) != type(getattr(self.Solver, key))
-                    and type(config['Solver'][key]) == str
-                ):
-                    log.debug(
-                        f"Expected type {type(getattr(self.Solver, key))} for [model.Solver.{key}]. Trying to read from file, assuming filename was provided."
-                    )
-                    try:
-                        data = np.loadtxt(config['Solver'][key])
-                        setattr(self.Solver, key, data)
-                    except:
-                        log.error(
-                            f"Unable to read model [Solver] configuration '{key}' either as {type(getattr(self.Solver, key))} or as a file with np.loadtxt."
-                        )
+        try:
+            config_keys['Solver']
+            for key in config_keys['Solver']:
+                try:
+                    config['Solver']
+                    setattr(self.Solver, key, config['Solver'][key])
+                except KeyError:
+                    if not key in config_req_keys['Solver']:
+                        log.warning(f"Model [Solver] configuration '{key}' was not found in {self.Paths.config}.")
+                    else:
+                        log.error(f"Model [Solver] configuration '{key}' was not found in {self.Paths.config}.")
                         raise
+                except ValueError:
+                    if (
+                        type(config['Solver'][key]) != type(getattr(self.Solver, key))
+                        and type(config['Solver'][key]) == str
+                    ):
+                        log.debug(
+                            f"Expected type {type(getattr(self.Solver, key))} for [model.Solver.{key}]. Trying to read from file, assuming filename was provided."
+                        )
+                        try:
+                            data = np.loadtxt(config['Solver'][key])
+                            setattr(self.Solver, key, data)
+                        except:
+                            log.error(
+                                f"Unable to read model [Solver] configuration '{key}' either as {type(getattr(self.Solver, key))} or as a file with np.loadtxt."
+                            )
+                            raise
+        except:
+            log.warning("No definitions for [model.solverSettings]")
 
         self.Paths = gwswexPaths()
-        for key in self.__cnf_keys['Paths']:
-            try:
-                setattr(self.Paths, key, config['Paths'][key])
-            except KeyError:
-                if not key in self.__cnf_req_keys['Paths']:
-                    log.warning(f"Model [Paths] configuration '{key}' was not found in {self.Paths.config}.")
-                else:
-                    log.error(f"Model [Paths] configuration '{key}' was not found in {self.Paths.config}.")
-                    raise
-            except ValueError:
-                if type(config['Paths'][key]) != type(getattr(self.Paths, key)) and type(config['Paths'][key]) == str:
-                    log.debug(
-                        f"Expected type {type(getattr(self.Paths, key))} for [model.Paths.{key}]. Trying to read from file, assuming filename was provided."
-                    )
-                    try:
-                        data = np.loadtxt(config['Paths'][key])
-                        setattr(self.Paths, key, data)
-                    except:
-                        log.error(
-                            f"Unable to read model [Paths] configuration '{key}' either as {type(getattr(self.Paths, key))} or as a file with np.loadtxt."
-                        )
+        try:
+            config_keys['Paths']
+            for key in config_keys['Paths']:
+                try:
+                    config['Paths'][key]
+                    setattr(self.Paths, key, config['Paths'][key])
+                except KeyError:
+                    if not key in config_req_keys['Paths']:
+                        log.warning(f"Model [Paths] configuration '{key}' was not found in {self.Paths.config}.")
+                    else:
+                        log.error(f"Model [Paths] configuration '{key}' was not found in {self.Paths.config}.")
                         raise
+                except ValueError:
+                    if type(config['Paths'][key]) != type(getattr(self.Paths, key)) and type(config['Paths'][key]) == str:
+                        log.debug(
+                            f"Expected type {type(getattr(self.Paths, key))} for [model.Paths.{key}]. Trying to read from file, assuming filename was provided."
+                        )
+                        try:
+                            data = np.loadtxt(config['Paths'][key])
+                            setattr(self.Paths, key, data)
+                        except:
+                            log.error(
+                                f"Unable to read model [Paths] configuration '{key}' either as {type(getattr(self.Paths, key))} or as a file with np.loadtxt."
+                            )
+                            raise
+        except:
+            log.warning("No definitions for [model.gwswexPaths]")
 
         self.IO = gwswexIO()
-        for key in self.__cnf_keys['IO']:
-            try:
-                setattr(self.IO, key, config['IO'][key])
-            except KeyError:
-                if not key in self.__cnf_req_keys['IO']:
-                    log.warning(f"Model [IO] configuration '{key}' was not found in {self.Paths.config}.")
-                else:
-                    log.error(f"Model [IO] configuration '{key}' was not found in {self.Paths.config}.")
-                    raise
-            except ValueError:
-                if type(config['IO'][key]) != type(getattr(self.IO, key)) and type(config['IO'][key]) == str:
-                    log.debug(
-                        f"Expected type {type(getattr(self.IO, key))} for [model.IO.{key}]. Trying to read from file, assuming filename was provided."
-                    )
-                    try:
-                        data = np.loadtxt(config['IO'][key])
-                        setattr(self.IO, key, data)
-                    except:
-                        log.error(
-                            f"Unable to read model [IO] configuration '{key}' either as {type(getattr(self.IO, key))} or as a file with np.loadtxt."
-                        )
+        try:
+            config_keys['IO']
+            for key in config_keys['IO']:
+                try:
+                    config['IO'][key]
+                    setattr(self.IO, key, config['IO'][key])
+                except KeyError:
+                    if not key in config_req_keys['IO']:
+                        log.warning(f"Model [IO] configuration '{key}' was not found in {self.Paths.config}.")
+                    else:
+                        log.error(f"Model [IO] configuration '{key}' was not found in {self.Paths.config}.")
                         raise
+                except ValueError:
+                    if type(config['IO'][key]) != type(getattr(self.IO, key)) and type(config['IO'][key]) == str:
+                        log.debug(
+                            f"Expected type {type(getattr(self.IO, key))} for [model.IO.{key}]. Trying to read from file, assuming filename was provided."
+                        )
+                        try:
+                            data = np.loadtxt(config['IO'][key])
+                            setattr(self.IO, key, data)
+                        except:
+                            log.error(
+                                f"Unable to read model [IO] configuration '{key}' either as {type(getattr(self.IO, key))} or as a file with np.loadtxt."
+                            )
+                            raise
+        except:
+            log.warning("No definitions for [model.gwswexIO]")
 
     def __read_config(self) -> bool:
         """Reads a YAML format configuration file.
@@ -902,9 +910,9 @@ class Model:
             print(f"Configuration file not found: {self.config_file}")
             sys.exit(1)
         except Exception as e:
-            log.error(f"Error reading configuration file: {self.config_file}")
+            log.error(f"Error reading configuration file: {self.config_file}. Check {self.log} for details.")
             log.error(e)
-            raise
+            sys.exit(1)
 
         if self.config is not None:
             if not self.__check_req_config_dict():
@@ -978,7 +986,7 @@ class Model:
             log.debug(f"Required attribute Domain.space.layers is not defined.")
             return False
         for lidx in range(self.Domain.space.nl):
-            for key in cnf_req_keys['Domain']['space']['layer']['.']:
+            for key in cnf_req_keys['Domain']['space']['layers']['.']:
                 try:
                     if getattr(self.Domain.space.layers[lidx], key) is None:
                         self.missing.append(f"Domain.space.layer[{lidx}].{key}")
@@ -989,7 +997,7 @@ class Model:
                     log.debug(f"Required attribute Domain.space.layer[{lidx}].'{key}' is not defined.")
                     return False
 
-            for vkey in cnf_req_keys['Domain']['space']['layer']['vanG']:
+            for vkey in cnf_req_keys['Domain']['space']['layers']['vanG']:
                 try:
                     if getattr(self.Domain.space.layers[lidx].vanG, vkey) is None:
                         self.missing.append(f"Domain.space.layer[{lidx}].vanG.{vkey}")
@@ -1181,6 +1189,8 @@ class Model:
             return {k: Model.__prune_dict(v) for k, v in d.items() if v is not None}
         elif isinstance(d, list):
             return [Model.__prune_dict(v) for v in d if v is not None]
+        elif isinstance(d, np.ndarray):
+            return d.tolist()
         else:
             return d
 
@@ -1245,7 +1255,7 @@ class Model:
         self.config['Domain']['time']['stop'] = self.Domain.time.start.strftime(self.Domain.time._valid_formats[0])
 
         # self.config = {key: value for key, value in self.config.items() if value is not None}
-        Model.__prune_dict(self.config)
+        self.config = Model.__prune_dict(self.config)
         del self.config['IO']['logger']
 
         self.__parsed_to_config = True

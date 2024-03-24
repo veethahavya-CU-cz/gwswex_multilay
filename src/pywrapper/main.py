@@ -1,8 +1,8 @@
 from .utils.customIO import _logger
 
 from .utils.customTypes import Model
-from .utils.customTypes import boundaryCondition as boundary
-from .utils.customTypes import externalForcing as forcing
+from .utils.customTypes import boundaryConditions as boundary
+from .utils.customTypes import externalForcings as forcing
 from .utils.customTypes import soilLayer as layer
 
 from .utils.importHandler import f2py_wrapper

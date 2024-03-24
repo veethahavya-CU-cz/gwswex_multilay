@@ -48,10 +48,10 @@ INCLUDES += -I/usr/local/include -I/usr/local/include/yaml-fortran -I/usr/local/
 
 
 # Define library linking paths and names
-LIB_PATHS := -L/usr/local/lib/
+LIB_PATHS := /usr/local/lib/
 LIBS := -lfgsl -lgsl -lgslcblas -lm -lyaml-interface -lyaml-read -lyaml-wrapper -lyaml-cpp -ldatetime
 
-LD_FLAGS += $(LIB_PATHS) $(LIBS)
+LD_FLAGS += -L$(LIB_PATHS) $(LIBS)
 
 LIB_OMP := -L/usr/local/lib/ -lgomp
 LIB_PY += -L/usr/lib/x86_64-linux-gnu/ -lpython3.9
@@ -86,7 +86,9 @@ ifeq ($(OS_TYPE),darwin)
 else
 	OS_TYPE := linux-gnu
 endif
-PY_VERSION := $(shell python -c 'import sys; print(sys.version_info.major * 10 + sys.version_info.minor)')
+pv1 := $(shell python -c 'import sys; print(sys.version_info.major)')
+pv2 += $(shell python -c 'import sys; print(sys.version_info.minor)')
+PY_VERSION := $(strip $(pv1))$(strip $(pv2))
 
 
 # Export necessary environment variables
@@ -252,6 +254,9 @@ install1:
 	@ cp $(OUT_LIB_PATH)/*.so $(INSTALL_DIR)/lib/
 	@ cp $(OUT_BIN_PATH)/* $(INSTALL_DIR)/bin/
 	@ cp $(OUT_INCLUDE_PATH)/*.mod $(INSTALL_DIR)/include/
+	@ echo 'export LD_LIBRARY_PATH=$(subst  ,:,$(LIB_PATHS))$$LD_LIBRARY_PATH' >> ~/.bashrc
+	@ export LD_LIBRARY_PATH=$(subst  ,:,$(LIB_PATHS))$$LD_LIBRARY_PATH
+	@ echo Exported $(LIB_PATHS) to LD_LIBRARY_PATH and added the export to ~/.bashrc, to make it persistent. Add it to other shell rc-files if necessary. 
 install2:
 	@ if [ `id -u` -eq 0 ]; then \
         $(MAKE) -s install2_root; \

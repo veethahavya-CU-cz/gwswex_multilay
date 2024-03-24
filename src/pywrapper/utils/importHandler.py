@@ -6,22 +6,20 @@ import numpy as np
 
 
 lib_paths = [
-    "/opt/gwswex/lib/",
-    "../../lib/",
-    "../../build/lib/",
+    '/opt/gwswex/lib/',
+    '~/.local/lib/',
+    '/usr/local/lib/'
 ]
 
 try:
-    sys.path.append(os.path.abspath("/opt/gwswex/lib/"))
-    sys.path.append(os.path.abspath("../../lib/"))
-    sys.path.append(os.path.abspath("../../build/lib/"))
+    for lpath in lib_paths:
+        sys.path.append(os.path.abspath(lpath))
 
     import gwswex_f2pywrapper as f2py_wrapper
     
 except ImportError:
     raise ModuleNotFoundError(
-        f"Could not find the gwswex_f2pywrapper module. \
-            Expected locations: /opt/gwswex/lib/ or {os.path.abspath('../../lib/')}"
+        f"Could not find the gwswex_f2pywrapper module. Expected locations: {lib_paths}]"
     )
 
 
