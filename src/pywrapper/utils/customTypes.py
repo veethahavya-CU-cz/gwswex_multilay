@@ -18,6 +18,7 @@ strftime = datetime.strftime
 
 # TODO: implement not_proofed from __setarrt__ to initiate __proof() when values are changed for all classes
 # TODO: proof the values of the inputs too (e.g. [0 < theta_r < theta_s < 1])
+# TODO: add better logging for top-level fns
 
 # fmt: off
 @dataclass
@@ -345,17 +346,10 @@ class Model:
     """Top-Level Class for the GWSWEX model."""
 
     def __infer_config_keys(self):
-        def prune(d: dict):
-            for key, value in list(d.items()):
-                if isinstance(value, dict):
-                    prune(value)
-                if key.startswith('_'):
-                    del d[key]
-
         self.__cnf_keys: dict = {}
         self.__cnf_keys['Domain'] = {}
-        self.__cnf_keys['Domain']['space'] = {'.': [field.name for field in fields(spatialDomain)]}
-        self.__cnf_keys['Domain']['time'] = {'.': [field.name for field in fields(temporalDomain)]}
+        self.__cnf_keys['Domain']['space'] = {'.': [field.name for field in fields(spatialDomain) if not field.name.startswith('_')]}
+        self.__cnf_keys['Domain']['time'] = {'.': [field.name for field in fields(temporalDomain) if not field.name.startswith('_')]}
         self.__cnf_keys['Domain']['space']['layers'] = {'.': [field.name for field in fields(soilLayer)]}
         self.__cnf_keys['Domain']['space']['layers']['.'].remove('vanG')
         self.__cnf_keys['Domain']['space']['layers']['vanG'] = [field.name for field in fields(vanGenuchten)]
@@ -366,8 +360,6 @@ class Model:
         self.__cnf_keys['Solver'] = [field.name for field in fields(solverSettings)]
         self.__cnf_keys['Paths'] = [field.name for field in fields(gwswexPaths)]
         self.__cnf_keys['IO'] = [field.name for field in fields(gwswexIO)]
-
-        # self.__cnf_keys = prune(self.__cnf_keys)
 
     def __define_required_configurations(self):
         self.__cnf_req_keys: dict = {'.': ['Domain', 'Ini', 'Meteo']}
@@ -438,6 +430,7 @@ class Model:
         self.wd: str = os.path.dirname(self.config_file)
         self.Paths.config = os.path.abspath(fpath)
 
+        # FIXME: logger levels are not properly set
         if not logfile:
             logfile = os.path.join(self.wd, 'gwswex_pywrapper.log')
         if debug:
@@ -523,7 +516,7 @@ class Model:
             try:
                 config['Ini'][key]
             except KeyError:
-                log.error(f"Model [initial] configuration '{key}' was not found in {config_file}.")
+                log.error(f"Model [Ini] configuration '{key}' was not found in {config_file}.")
                 return False
 
         for key in config_req_keys['Meteo']:
@@ -692,9 +685,9 @@ class Model:
                 setattr(self.Ini, key, config['Ini'][key])
             except KeyError:
                 if not key in config_req_keys['Ini']:
-                    log.warning(f"Model [initial] configuration '{key}' was not found in {self.Paths.config}.")
+                    log.warning(f"Model [Ini] configuration '{key}' was not found in {self.Paths.config}.")
                 else:
-                    log.error(f"Model [initial] configuration '{key}' was not found in {self.Paths.config}.")
+                    log.error(f"Model [Ini] configuration '{key}' was not found in {self.Paths.config}.")
                     raise
             except ValueError:
                 if (
@@ -702,14 +695,14 @@ class Model:
                     and type(config['Ini'][key]) == str
                 ):
                     log.debug(
-                        f"Expected type {type(getattr(self.Ini, key))} for [model.initial.{key}]. Trying to read from file, assuming filename was provided."
+                        f"Expected type {type(getattr(self.Ini, key))} for [model.Ini.{key}]. Trying to read from file, assuming filename was provided."
                     )
                     try:
                         data = np.loadtxt(config['Ini'][key])
                         setattr(self.Ini, key, data)
                     except:
                         log.error(
-                            f"Unable to read model [initial] configuration '{key}' either as {type(getattr(self.Ini, key))} or as a file with np.loadtxt."
+                            f"Unable to read model [Ini] configuration '{key}' either as {type(getattr(self.Ini, key))} or as a file with np.loadtxt."
                         )
                         raise
 
@@ -1022,12 +1015,12 @@ class Model:
         for key in cnf_req_keys['Ini']:
             try:
                 if getattr(self.Ini, key) is None:
-                    self.missing.append(f"initial.{key}")
-                    log.debug(f"Required attribute initial.'{key}' is not defined.")
+                    self.missing.append(f"Ini.{key}")
+                    log.debug(f"Required attribute Ini.'{key}' is not defined.")
                     return False
             except AttributeError:
-                self.missing.append(f"initial.{key}")
-                log.debug(f"Required attribute initial.'{key}' is not defined.")
+                self.missing.append(f"Ini.{key}")
+                log.debug(f"Required attribute Ini.'{key}' is not defined.")
                 return False
 
         for key in cnf_req_keys['Meteo']:
@@ -1122,16 +1115,16 @@ class Model:
             try:
                 self.Ini.gw = self.Ini.gw.reshape(self.Domain.space.ne)
             except ValueError:
-                log.error(f"initial.gw must be an array of size {self.Domain.space.ne}.")
-                print(f"initial.gw must be an array of size {self.Domain.space.ne}.")
+                log.error(f"Ini.gw must be an array of size {self.Domain.space.ne}.")
+                print(f"Ini.gw must be an array of size {self.Domain.space.ne}.")
                 sys.exit(1)
         self.Ini.sw = np.array(self.Ini.sw, dtype=self.fprecesion, order="F")
         if not self.Ini.sw.size == self.Domain.space.ne:
             try:
                 self.Ini.sw = self.Ini.sw.reshape(self.Domain.space.ne)
             except ValueError:
-                log.error(f"initial.sw must be an array of size {self.Domain.space.ne}.")
-                print(f"initial.sw must be an array of size {self.Domain.space.ne}.")
+                log.error(f"Ini.sw must be an array of size {self.Domain.space.ne}.")
+                print(f"Ini.sw must be an array of size {self.Domain.space.ne}.")
                 sys.exit(1)
 
         self.Meteo.precip = np.array(self.Meteo.precip, dtype=self.fprecesion, order="F")
@@ -1282,7 +1275,7 @@ class Model:
         with open(self.Paths.config, 'w') as f:
             yaml.dump(self.config, f, sort_keys=False, default_flow_style=False)
 
-        log.info(f"Wrote configuration to {self.Paths.config}:\n{self.config}")
+        log.info(f"Wrote configuration to {self.Paths.config}")
 
     def init(self):
         """Initialises the model data structure with the configuration file.
