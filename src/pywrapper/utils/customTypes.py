@@ -16,6 +16,7 @@ from .importHandler import re_import
 strptime = datetime.strptime
 strftime = datetime.strftime
 
+# TODO: remove custom __init__methods and allow to set attrs only via dataclass init
 # TODO: implement not_proofed from __setarrt__ to initiate __proof() when values are changed for all classes
 # TODO: proof the values of the inputs too (e.g. [0 < theta_r < theta_s < 1])
 # TODO: add better logging for top-level fns

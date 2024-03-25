@@ -112,7 +112,6 @@ Paths:
   input: /home/veeth/gwswex_multilay/input
   logfile: ./gwswex_pywrapper.log
   config: /home/veeth/gwswex_multilay/config.yml
-  f2pywrapper: /opt/gwswex/lib/gwswex_f2pywrapper.cpython-311-x86_64-linux-gnu.so
 IO:
   verbose: true
   debug: false
